@@ -1,0 +1,2 @@
+# Este arquivo mantém a pasta output/ no git
+# Os arquivos gerados serão ignorados pelo .gitignore

@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+dist/
+*.tsbuildinfo
+
+
+# Output e custom files
+src/templates/*.html
+src/templates/metadata.json
+
+
+output/*.html
+output/*.pdf
+output/*.md
+output/*.txt
+
+# Keep output folder structure
+!output/.gitkeep
+
+# Environment
+.env
+.env.local
+
+# Database
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+temp/

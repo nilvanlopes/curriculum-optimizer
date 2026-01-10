@@ -61,9 +61,8 @@ Obtenha sua chave em: https://makersuite.google.com/app/apikey
 Antes de gerar currículos otimizados, você precisa ter um arquivo `base-curriculum.html` preenchido com suas informações. Este arquivo deve estar em `src/templates/base-curriculum.html`.
 
 **Opções para criar o currículo base:**
-
+- **Importar de PDF/HTML**: Use o prompt `06-import-curriculum.md` para converter um currículo existente
 - **Editar manualmente**: Use `src/templates/base-curriculum-example.html` como referência e preencha com suas informações
-- **Importar de PDF/HTML**: Use o prompt `06-import-curriculum.md` para converter um currículo existente (funcionalidade futura)
 
 O currículo base deve conter:
 - Todas as suas experiências profissionais
@@ -262,4 +261,5 @@ cv-optimizer/
 ## 📝 Licença
 
 MIT - Douglas Fantoni
+
 

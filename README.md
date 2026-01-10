@@ -1,6 +1,6 @@
 # CV Optimizer
 
-Sistema automatizado de otimização de currículos para vagas específicas, com análise semântica, múltiplos formatos de saída e validação ATS.
+Sistema de otimização de currículos para vagas específicas, com análise semântica, múltiplos formatos de saída e validação ATS.
 
 ## 🚀 Instalação
 
@@ -262,3 +262,4 @@ cv-optimizer/
 ## 📝 Licença
 
 MIT - Douglas Fantoni
+

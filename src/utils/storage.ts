@@ -58,7 +58,7 @@ export class StorageManager {
   saveGeneratedCV(data: {
     jobId?: number;
     jobAnalysisId?: number;
-    template: string;
+    role: string;
     outputName: string;
     formats: string[];
     matchScore?: number;
@@ -69,7 +69,7 @@ export class StorageManager {
     return this.db.saveGeneratedCV({
       jobId: data.jobId || null,
       jobAnalysisId: data.jobAnalysisId || null,
-      template: data.template,
+      template: data.role, // Mantém 'template' no DB para compatibilidade, mas usa role
       outputName: data.outputName,
       formats: data.formats,
       matchScore: data.matchScore || null,

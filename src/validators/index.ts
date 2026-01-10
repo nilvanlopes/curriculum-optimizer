@@ -1,7 +1,8 @@
+import { config } from '../config.js';
+import type { ValidationResult } from '../types.js';
 import { ATSValidator } from './ats.js';
 import { KeywordDensityCalculator } from './keyword-density.js';
 import { LengthValidator } from './length.js';
-import type { ValidationResult } from '../types.js';
 
 /**
  * Validador completo de currículo
@@ -62,12 +63,18 @@ export class ResumeValidator {
     totalWeight += 50;
 
     // Length Score (peso 30%)
-    const lengthScore = lengthResult.passed ? 100 : (lengthResult.pageCount <= 2 ? 80 : 50);
+    const { maxPages } = config.validation.length;
+    const lengthScore = lengthResult.passed ? 100 : (lengthResult.pageCount <= maxPages ? 80 : 50);
     score += (lengthScore / 100) * 30;
     totalWeight += 30;
 
     // Keyword Density Score (peso 20%)
-    const idealDensity = keywordDensity >= 5 && keywordDensity <= 10 ? 100 : keywordDensity < 5 ? (keywordDensity / 5) * 100 : (10 / keywordDensity) * 100;
+    const { min: minDensity, max: maxDensity } = config.validation.keywordDensity;
+    const idealDensity = keywordDensity >= minDensity && keywordDensity <= maxDensity 
+      ? 100 
+      : keywordDensity < minDensity 
+        ? (keywordDensity / minDensity) * 100 
+        : (maxDensity / keywordDensity) * 100;
     score += (idealDensity / 100) * 20;
     totalWeight += 20;
 

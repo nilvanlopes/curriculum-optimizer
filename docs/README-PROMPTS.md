@@ -57,7 +57,7 @@ Os prompts são arquivos Markdown localizados em `prompts/` que contêm instruç
 
 ---
 
-### 02-selecao-conteudo.md
+### 02-selecao-conteudo-e-apresentacao.md
 
 **Quando é usado:**
 - Comando `generate` - Segundo passo na geração de currículo
@@ -65,16 +65,23 @@ Os prompts são arquivos Markdown localizados em `prompts/` que contêm instruç
 **Classe que usa:** `ContentSelector`
 
 **O que faz:**
-- Seleciona experiências mais relevantes para a vaga
-- Prioriza e reordena experiências por relevância
-- Seleciona achievements (conquistas) a destacar de cada experiência
-- Reordena categorias de skills por relevância
-- Prioriza tecnologias dentro de cada categoria
-- Remove skills irrelevantes (mantém ~30-35 totais)
-- Gera texto de summary personalizado (200-400 caracteres)
+- **Seleção de conteúdo:**
+  - Seleciona experiências mais relevantes para a vaga (máximo 5)
+  - Prioriza e reordena experiências por relevância
+  - Seleciona achievements (conquistas) a destacar de cada experiência (2-4 por experiência)
+  - Seleciona categorias de skills mais relevantes (máximo 6)
+  - Coleta e filtra tecnologias do template HTML (não inventa)
+  - Seleciona certificações mais relevantes (máximo 5-8)
+- **Geração de apresentação:**
+  - Gera texto de apresentação personalizado (200-400 caracteres) para a seção Summary
+  - Inclui 3-5 keywords críticas naturalmente (se houver análise de vaga)
+  - Conecta experiências do candidato com desafios da vaga/role
+  - Menciona métricas quando possível
 
 **Placeholders:**
-- `{jobAnalysis}` - Análise completa da vaga (JSON)
+- `{jobAnalysis}` - Análise completa da vaga (JSON) ou análise mínima baseada no role
+- `{role}` - Título do currículo fornecido pelo usuário (opcional)
+- `{candidateProfile}` - Perfil do candidato extraído do template HTML
 - `{curriculumHtml}` - HTML do currículo base
 
 **Formato de resposta:**
@@ -82,114 +89,88 @@ Os prompts são arquivos Markdown localizados em `prompts/` que contêm instruç
 {
   "selectedExperiences": [
     {
-      "companyId": "ilegra",
+      "companyId": "ilegra-zenvia",
       "priority": 1,
       "achievementsToHighlight": [0, 1, 2],
       "reason": "..."
     }
   ],
-  "reorderedSkills": ["frontend", "architecture", ...],
-  "summaryText": "...",
+  "selectedSkills": {
+    "categories": [
+      {
+        "categoryId": "frontend",
+        "categoryName": "Frontend",
+        "skills": ["React", "Next.js", "TypeScript"]
+      }
+    ]
+  },
+  "selectedCertifications": [
+    {
+      "index": 0,
+      "text": "..."
+    }
+  ],
+  "presentationText": "...",
+  "keywordsUsed": ["React", "Next.js", ...],
   "suggestions": [...]
 }
 ```
 
 **Configuração:**
-- `maxTokens`: 4096
+- `maxTokens`: 8192 (aumentado para suportar geração de apresentação também)
 - `temperature`: 0.4 (moderada para balancear criatividade e consistência)
 
 ---
 
-### 03-gerador-apresente-se.md
+### 03-montagem-html.md
 
 **Quando é usado:**
 - Comando `generate` - Terceiro passo na geração de currículo
 
-**Classe que usa:** `PresentationGenerator`
+**Classe que usa:** `HTMLComposer`
 
 **O que faz:**
-- Gera texto de apresentação personalizado (200-400 caracteres)
-- Cria variações para diferentes plataformas:
-  - `short`: Versão ultra-concisa (150-200 chars)
-  - `medium`: Versão padrão (250-350 chars) para Gupy
-  - `linkedin`: Versão elaborada (400-500 chars) para LinkedIn
-- Inclui 3-5 keywords críticas naturalmente
-- Conecta experiências do candidato com desafios da vaga
-- Menciona métricas quando possível
+- Recebe o resultado da seleção de conteúdo e monta HTML completo
+- Extrai seções do template base conforme seleção
+- **Monta HTML completo:**
+  - Atualiza Header com role fornecido
+  - Insere presentationText na seção Summary
+  - Extrai e ordena experiências selecionadas (máximo 5)
+  - Mantém apenas conquistas destacadas de cada experiência
+  - Monta categorias de skills selecionadas com tecnologias coletadas
+  - Seleciona certificações conforme critérios
+  - Mantém Education e Languages do template original
+- **Garante 2 páginas A4:**
+  - Estima tamanho por seção (~800-1000 palavras totais)
+  - Ajusta espaçamentos e reduz conteúdo se necessário
+  - Prioriza conteúdo mais relevante
+- **Valida coerência:**
+  - Keywords da vaga aparecem no HTML
+  - Skills alinhadas com experiências
+  - Ordem lógica: Header → Summary → Experience → Skills → Education → Certifications → Languages
 
 **Placeholders:**
-- `{jobAnalysis}` - Análise completa da vaga (JSON)
-- `{candidateProfile}` - Resumo do perfil do candidato
-- `{additionalContext}` - Contexto adicional (opcional)
+- `{role}` - Título do currículo fornecido pelo usuário
+- `{contentSelection}` - Resultado da seleção de conteúdo (JSON)
+- `{jobAnalysis}` - Análise completa da vaga (JSON, opcional)
+- `{templateHtml}` - HTML completo do template base
 
 **Formato de resposta:**
-```json
-{
-  "presentationText": "...",
-  "keywordsUsed": ["React", "Next.js", ...],
-  "length": 287,
-  "variations": {
-    "short": "...",
-    "medium": "...",
-    "linkedin": "..."
-  }
-}
-```
+HTML completo e válido (string), não JSON. Retorna HTML pronto para uso, começando com `<!DOCTYPE html>` e terminando com `</html>`.
 
 **Configuração:**
-- `maxTokens`: 2048
-- `temperature`: 0.7 (maior para textos mais naturais)
+- `maxTokens`: 8192 (template grande + resposta HTML)
+- `temperature`: 0.3 (baixa para HTML consistente)
 
----
-
-### 04-variacoes-estrategicas.md
-
-**Quando é usado:**
-- Comando `generate` - Quarto passo na geração de currículo
-
-**Classe que usa:** `StrategyOptimizer`
-
-**O que faz:**
-- Adapta conteúdo baseado no template escolhido:
-  - **tech-lead**: Foca em liderança, arquitetura, decisões estratégicas
-  - **senior-frontend**: Foca em React, performance, UI/UX
-  - **fullstack**: Equilibra frontend, backend e infra
-- Fornece ajustes estratégicos por seção
-- Sugere reordenação de conteúdo
-- Identifica o que enfatizar ou minimizar
-
-**Placeholders:**
-- `{template}` - Template escolhido (tech-lead, senior-frontend, fullstack)
-- `{jobAnalysis}` - Análise completa da vaga (JSON)
-- `{curriculumContent}` - Conteúdo atual do currículo
-
-**Formato de resposta:**
-```json
-{
-  "template": "tech-lead",
-  "adjustments": [
-    {
-      "section": "summary",
-      "action": "emphasize",
-      "details": "..."
-    }
-  ],
-  "rationale": "..."
-}
-```
-
-**Configuração:**
-- `maxTokens`: 2048
-- `temperature`: 0.5 (moderada)
+**Nota:** Este prompt retorna HTML puro, não JSON. A IA monta o HTML completo garantindo que caiba em 2 páginas A4.
 
 ---
 
 ### 05-analise-salarial.md
 
 **Quando é usado:**
-- Pode ser usado para análise inteligente de propostas salariais (funcionalidade futura)
-
-**Classe que usa:** `SalaryAnalyzer`
+- Funcionalidade futura para análise inteligente de propostas salariais
+- Atualmente não está em uso
 
 **O que faz:**
 - Compara proposta com mercado
@@ -254,16 +235,20 @@ HTML completo e válido do `base-curriculum.html` estruturado.
 Quando você executa `generate`, os prompts são usados nesta ordem:
 
 ```
-1. 01-analise-vaga.md
+1. 01-analise-vaga.md (opcional - apenas se houver descrição de vaga)
    ↓
-2. 02-selecao-conteudo.md
+2. 02-selecao-conteudo-e-apresentacao.md (combinado: seleção + apresentação)
    ↓
-3. 03-gerador-apresente-se.md
+3. 03-montagem-html.md (monta HTML completo garantindo 2 páginas)
    ↓
-4. 04-variacoes-estrategicas.md
-   ↓
-5. Geração HTML/PDF/Markdown
+4. Geração PDF/Markdown
 ```
+
+**Nota:** O fluxo foi simplificado de 4 para 2-3 prompts:
+- Prompt 1 (análise) continua opcional
+- Prompt 2 (seleção + apresentação) combina duas etapas em uma
+- Prompt 3 (montagem HTML) substitui a manipulação DOM anterior
+- StrategyOptimizer foi removido (lógica incorporada na montagem HTML)
 
 ## Estrutura de um Prompt
 

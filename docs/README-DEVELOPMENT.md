@@ -117,23 +117,6 @@ npm run clean && npm run build
 
 ---
 
-### test:template
-
-Testa os templates HTML do sistema.
-
-```bash
-npm run test:template
-```
-
-**Quando usar:**
-- Para validar templates
-- Para verificar estrutura HTML
-- Durante desenvolvimento de novos templates
-
-**Nota:** Este comando pode variar conforme implementação. Consulte o código em `src/templates/template-tester.ts` para detalhes.
-
----
-
 ### serve
 
 Inicia servidor de desenvolvimento para editar HTML (alias para `npm start serve`).

@@ -34,8 +34,11 @@ export class Logger {
     }
   }
 
-  startSpinner(message: string): void {
-    this.spinner = ora(message).start();
+  startSpinner(message: string, step?: { current: number; total: number }): void {
+    const displayMessage = step 
+      ? `[${step.current}/${step.total}] ${message}`
+      : message;
+    this.spinner = ora(displayMessage).start();
   }
 
   updateSpinner(message: string): void {

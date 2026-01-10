@@ -31,7 +31,7 @@ Analise a proposta salarial fornecida e forneça:
 ```json
 {
   "marketComparison": {
-    "position": "Tech Lead Frontend",
+    "position": "[Role]",
     "marketRange": {
       "min": 14000,
       "max": 20000,
@@ -39,7 +39,7 @@ Analise a proposta salarial fornecida e forneça:
       "currency": "BRL"
     },
     "proposalLevel": "na-media",
-    "comparison": "A proposta está na média do mercado para Tech Lead Frontend em São Paulo. Considerando sua experiência de 6+ anos, está adequada."
+    "comparison": "A proposta está na média do mercado para [Role] em [Localização]. Considerando sua experiência de [X] anos, está adequada."
   },
   "benefitsAnalysis": {
     "totalCompensation": 17200,
@@ -63,7 +63,7 @@ Analise a proposta salarial fornecida e forneça:
   ],
   "counterProposal": {
     "suggestedValue": 17500,
-    "rationale": "Proposta de R$ 17.500 baseada em: (1) experiência comprovada de 6+ anos, (2) match de 87% com requisitos da vaga, (3) média de mercado de R$ 17.000. Alternativamente, manter R$ 16.000 mas aumentar PLR para 30% ou incluir bônus de entrada.",
+    "rationale": "Proposta de R$ [valor] baseada em: (1) experiência comprovada de [X] anos, (2) match de [X]% com requisitos da vaga, (3) média de mercado de R$ [valor]. Alternativamente, manter valor atual mas aumentar PLR para [X]% ou incluir bônus de entrada.",
     "presentationStrategy": "Enfatizar valor agregado (match score, experiência relevante, histórico de resultados). Apresentar dados de mercado como referência, não como demanda. Ser flexível com estrutura (salário vs benefícios)."
   },
   "recommendation": "A proposta atual está justa mas negociável. Recomendamos contra-propor R$ 17.500 ou negociar benefícios adicionais mantendo o valor atual."

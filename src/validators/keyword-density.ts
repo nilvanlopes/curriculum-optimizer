@@ -1,3 +1,5 @@
+import { config } from '../config.js';
+
 /**
  * Calculador de densidade de keywords
  */
@@ -59,12 +61,13 @@ export class KeywordDensityCalculator {
     // Verifica distribuição natural
     const naturalDistribution = this.checkNaturalDistribution(distribution, keywords);
 
-    // Valida densidade ideal (5-10%)
-    if (density < 5) {
-      warnings.push(`Densidade de keywords muito baixa (${density.toFixed(2)}%). Ideal: 5-10%`);
+    // Valida densidade ideal
+    const { min: minDensity, max: maxDensity } = config.validation.keywordDensity;
+    if (density < minDensity) {
+      warnings.push(`Densidade de keywords muito baixa (${density.toFixed(2)}%). Ideal: ${minDensity}-${maxDensity}%`);
       suggestions.push('Considere adicionar mais keywords relevantes naturalmente no texto');
-    } else if (density > 10) {
-      warnings.push(`Densidade de keywords muito alta (${density.toFixed(2)}%). Pode ser detectado como keyword stuffing. Ideal: 5-10%`);
+    } else if (density > maxDensity) {
+      warnings.push(`Densidade de keywords muito alta (${density.toFixed(2)}%). Pode ser detectado como keyword stuffing. Ideal: ${minDensity}-${maxDensity}%`);
       suggestions.push('Reduza repetições desnecessárias de keywords. Foque em uso natural');
     }
 

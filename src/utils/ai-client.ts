@@ -57,6 +57,7 @@ export class AIClient {
     options?: {
       maxTokens?: number;
       temperature?: number;
+      enableWebSearch?: boolean;
     }
   ): Promise<string> {
     try {
@@ -68,6 +69,7 @@ export class AIClient {
       return await this.provider.call(prompt, {
         maxTokens: options?.maxTokens,
         temperature: options?.temperature,
+        enableWebSearch: options?.enableWebSearch,
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -86,21 +88,46 @@ export class AIClient {
     options?: {
       maxTokens?: number;
       temperature?: number;
+      enableWebSearch?: boolean;
     }
   ): Promise<T> {
     const response = await this.call(promptFileName, placeholders, options);
 
     // Tenta extrair JSON da resposta (pode ter markdown ou texto antes/depois)
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    // Primeiro, tenta extrair de code blocks markdown
+    let jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
     
+    // Se não encontrou em code block, tenta encontrar qualquer JSON
     if (!jsonMatch) {
-      throw new Error('Resposta não contém JSON válido');
+      jsonMatch = response.match(/\{[\s\S]*\}/);
+    } else {
+      // Se encontrou em code block, usa apenas o conteúdo
+      jsonMatch = [jsonMatch[0], jsonMatch[1]];
+    }
+    
+    if (!jsonMatch || !jsonMatch[0]) {
+      // Mostra parte da resposta para debug
+      const preview = response.substring(0, 500).replace(/\n/g, '\\n');
+      const responseLength = response.length;
+      
+      throw new Error(
+        `Resposta não contém JSON válido.\n` +
+        `Resposta recebida (primeiros 500 chars de ${responseLength}):\n${preview}${responseLength > 500 ? '...' : ''}`
+      );
     }
 
     try {
-      return JSON.parse(jsonMatch[0]) as T;
+      const jsonString = jsonMatch[1] || jsonMatch[0];
+      return JSON.parse(jsonString) as T;
     } catch (error) {
-      throw new Error(`Erro ao fazer parse do JSON: ${error}`);
+      // Mostra parte da resposta que tentou fazer parse
+      const jsonPreview = jsonMatch[0].substring(0, 500).replace(/\n/g, '\\n');
+      const jsonLength = jsonMatch[0].length;
+      
+      throw new Error(
+        `Erro ao fazer parse do JSON: ${error instanceof Error ? error.message : error}\n` +
+        `JSON encontrado (primeiros 500 chars de ${jsonLength}):\n${jsonPreview}${jsonLength > 500 ? '...' : ''}`
+      );
     }
   }
 }

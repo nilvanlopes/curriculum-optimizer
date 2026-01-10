@@ -6,14 +6,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SalaryCalculator } from './calculators/salary.js';
-import { HTMLGenerator } from './generators/html.js';
+import { config } from './config.js';
+import { HTMLComposer } from './generators/html-composer.js';
 import { MarkdownGenerator } from './generators/markdown.js';
 import { PDFGenerator } from './generators/pdf.js';
 import { JobAnalyzer } from './prompts/analyzers/job-analyzer.js';
-import { PresentationGenerator } from './prompts/optimizers/presentation-generator.js';
-import { StrategyOptimizer } from './prompts/optimizers/strategy-optimizer.js';
 import { ContentSelector } from './prompts/selectors/content-selector.js';
-import type { OutputFormat, TemplateType } from './types.js';
+import type { JobAnalysisResult } from './types.js';
 import { Logger } from './utils/logger.js';
 import { storage } from './utils/storage.js';
 import { ResumeValidator } from './validators/index.js';
@@ -68,110 +67,174 @@ program
   .description('Gera currículo otimizado baseado na descrição da vaga')
   .option('-j, --job-description <text>', 'Descrição completa da vaga (texto ou caminho para arquivo .txt/.md)')
   .option('-f, --job-file <path>', 'Caminho para arquivo .txt ou .md com descrição da vaga')
-  .requiredOption('-t, --template <type>', 'Template a usar (tech-lead, senior-frontend, fullstack)')
-  .requiredOption('-o, --output-name <name>', 'Nome do arquivo de saída (sem extensão)')
-  .option('--format <format>', 'Formato de saída (html, pdf, markdown, all)', 'all')
+  .requiredOption('-r, --role <title>', 'Título do currículo (ex: "Tech Lead Frontend", "Senior Frontend Developer")')
+  .option('-o, --output-name <name>', 'Nome do arquivo de saída (sem extensão). Padrão: "Curriculo {{role}}"')
+  .option('--formats <formats>', 'Formatos de saída separados por vírgula (html, pdf, markdown). Padrão: pdf', 'pdf')
+  .option('-t, --template <path>', 'Caminho para template HTML base do currículo. Padrão: src/templates/base-curriculum.html')
   .option('-v, --verbose', 'Modo verboso com logs detalhados', false)
   .action(async (options) => {
     try {
       // Valida entrada
-      if (!options.jobDescription && !options.jobFile) {
-        logger.error('Erro: Você deve fornecer --job-description ou --job-file');
-        logger.info('Exemplo: --job-description "texto..." ou --job-file vaga.txt');
-        process.exit(1);
-      }
-
       if (options.jobDescription && options.jobFile) {
         logger.warning('Ambos --job-description e --job-file fornecidos. Usando --job-file');
       }
 
-      // Lê descrição da vaga (arquivo ou texto direto)
-      const jobDescriptionInput = options.jobFile || options.jobDescription || '';
-      let jobDescription: string;
+      // Lê descrição da vaga (arquivo ou texto direto) - opcional
+      const hasJobDescription = options.jobDescription || options.jobFile;
+      let jobDescription: string | null = null;
 
-      try {
-        jobDescription = readJobDescription(jobDescriptionInput);
-      } catch (error) {
-        logger.error(`Erro ao ler descrição da vaga: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        process.exit(1);
+      if (hasJobDescription) {
+        const jobDescriptionInput = options.jobFile || options.jobDescription || '';
+        try {
+          jobDescription = readJobDescription(jobDescriptionInput);
+        } catch (error) {
+          logger.error(`Erro ao ler descrição da vaga: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+          process.exit(1);
+        }
       }
 
       logger.section('Gerando Currículo Otimizado');
       
-      const template = options.template as TemplateType;
-      const outputName = options.outputName;
-      const format = (options.format || 'all') as OutputFormat;
+      const role = options.role as string;
+      // Gera nome padrão se não fornecido: "Curriculo {{role}}" (sanitizado para nome de arquivo válido)
+      const defaultOutputName = `Curriculo ${role}`
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+        .replace(/\s+/g, '-') // Substitui espaços por hífens
+        .replace(/-+/g, '-') // Remove hífens duplicados
+        .replace(/^-|-$/g, ''); // Remove hífens no início/fim
+      const outputName = options.outputName || defaultOutputName;
       
-      logger.info(`Template: ${template}`);
-      logger.info(`Output: ${outputName}`);
-      logger.info(`Formato: ${format}`);
-      if (options.jobFile) {
-        logger.info(`Arquivo de vaga: ${path.resolve(options.jobFile)}`);
+      // Processa formatos: separa por vírgula, remove espaços, normaliza para lowercase
+      const formatsInput = (options.formats || 'pdf').toLowerCase();
+      const requestedFormats = formatsInput
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => f.length > 0);
+      
+      // Valida formatos
+      const validFormats = ['html', 'pdf', 'markdown'];
+      const invalidFormats = requestedFormats.filter((f: string) => !validFormats.includes(f));
+      if (invalidFormats.length > 0) {
+        logger.error(`Formatos inválidos: ${invalidFormats.join(', ')}. Formatos válidos: ${validFormats.join(', ')}`);
+        process.exit(1);
       }
       
-      // 1. Análise de vaga
-      logger.startSpinner('Analisando descrição da vaga...');
-      const jobAnalyzer = new JobAnalyzer();
-      const jobAnalysis = await jobAnalyzer.analyzeJob(jobDescription, undefined, {
-        saveToHistory: true,
-      });
-      logger.stopSpinner(true, 'Vaga analisada com sucesso');
-      logger.success(`${jobAnalysis.keywords.length} keywords críticas identificadas`);
-      logger.info(`Match Score: ${jobAnalysis.matchScore}%`);
+      // Determina templatePath (fornecido ou padrão)
+      const templatePath = options.template 
+        ? path.resolve(options.template)
+        : path.join(__dirname, 'templates/base-curriculum.html');
       
-      // 2. Seleção de conteúdo
-      logger.startSpinner('Selecionando e priorizando conteúdo...');
-      const contentSelector = new ContentSelector();
-      const contentSelection = await contentSelector.selectContent(jobAnalysis);
-      logger.stopSpinner(true, 'Conteúdo selecionado');
+      logger.info(`Role: ${role}`);
+      logger.info(`Output: ${outputName}`);
+      logger.info(`Formatos: ${requestedFormats.join(', ')}`);
+      logger.info(`Template: ${templatePath}`);
+      if (hasJobDescription) {
+        if (options.jobFile) {
+          logger.info(`Arquivo de vaga: ${path.resolve(options.jobFile)}`);
+        } else {
+          logger.info('Descrição da vaga fornecida via texto');
+        }
+      } else {
+        logger.info('Gerando currículo baseado apenas no role (sem otimização para vaga específica)');
+      }
       
-      // 3. Geração de texto de apresentação
-      logger.startSpinner('Gerando texto de apresentação...');
-      const presentationGenerator = new PresentationGenerator();
-      const presentation = await presentationGenerator.generatePresentation(jobAnalysis);
-      logger.stopSpinner(true, 'Texto de apresentação gerado');
+      // Calcula total de etapas
+      // O loop iterativo de HTML é contado como 1 etapa (internamente pode ter múltiplas tentativas)
+      let totalSteps = 2; // Sempre: Seleção de conteúdo + Montagem HTML (com loop iterativo)
+      if (jobDescription) {
+        totalSteps += 1; // Análise de vaga
+      }
+      if (requestedFormats.includes('pdf')) {
+        totalSteps += 1; // Geração PDF final
+        if (jobDescription) {
+          totalSteps += 1; // Validação ATS (apenas se houver análise de vaga)
+        }
+      }
+      if (requestedFormats.includes('markdown')) {
+        totalSteps += 1; // Geração Markdown
+      }
       
-      // 4. Otimização estratégica (opcional - pode ser aplicada depois)
-      logger.startSpinner('Otimizando estratégia do template...');
-      const htmlGenerator = new HTMLGenerator();
-      const { html: baseHtml } = htmlGenerator.loadTemplate();
-      const strategyOptimizer = new StrategyOptimizer();
-      // Nota: Otimização estratégica pode ser usada para ajustes finos
-      await strategyOptimizer.optimize(template, jobAnalysis, baseHtml);
-      logger.stopSpinner(true, 'Estratégia otimizada');
+      let currentStep = 0;
       
-      // 5. Geração HTML
-      logger.startSpinner('Gerando HTML otimizado...');
-
+      // 1. Análise de vaga (opcional)
+      let jobAnalysis: JobAnalysisResult | null = null;
+      if (jobDescription) {
+        currentStep += 1;
+        logger.startSpinner('Analisando descrição da vaga...', { current: currentStep, total: totalSteps });
+        const jobAnalyzer = new JobAnalyzer(templatePath);
+        jobAnalysis = await jobAnalyzer.analyzeJob(jobDescription, undefined, {
+          saveToHistory: true,
+        });
+        logger.stopSpinner(true, 'Vaga analisada com sucesso');
+        logger.success(`${jobAnalysis.keywords.length} keywords críticas identificadas`);
+        logger.info(`Match Score: ${jobAnalysis.matchScore}%`);
+      } else {
+        logger.info('Pulando análise de vaga (nenhuma descrição fornecida)');
+      }
+      
+      // 2. Seleção de conteúdo e geração de apresentação (combinado)
+      currentStep += 1;
+      logger.startSpinner('Selecionando conteúdo e gerando apresentação...', { current: currentStep, total: totalSteps });
+      const contentSelector = new ContentSelector(templatePath);
+      const contentSelection = jobAnalysis 
+        ? await contentSelector.selectContentAndPresentation(jobAnalysis)
+        : await contentSelector.selectContentAndPresentationByRole(role);
+      logger.stopSpinner(true, 'Conteúdo selecionado e apresentação gerada');
+      
+      // 3. Montagem HTML completo com loop iterativo
+      currentStep += 1;
+      logger.startSpinner('Montando HTML completo do currículo...', { current: currentStep, total: totalSteps });
+      const htmlComposer = new HTMLComposer(templatePath);
+      
+      // Usa loop iterativo para garantir que o PDF fique entre 1.9-2.2 páginas
+      const iterationResult = await htmlComposer.composeWithIteration(
+        role,
+        contentSelection,
+        jobAnalysis || undefined,
+        (message, attempt, maxAttempts) => {
+          if (options.verbose) {
+            logger.debug(`[Iteração ${attempt}/${maxAttempts}] ${message}`);
+          }
+        }
+      );
+      
+      const html = iterationResult.html;
+      
+      // Salva HTML
       const outputDir = path.join(process.cwd(), 'output');
       const htmlPath = path.join(outputDir, `${outputName}.html`);
-      const html = await htmlGenerator.generate(
-        template,
-        contentSelection,
-        presentation.presentationText
-      );
-      // Salva HTML
-      const fs = await import('fs');
-      fs.mkdirSync(outputDir, { recursive: true });
-      fs.writeFileSync(htmlPath, html, 'utf-8');
-      logger.stopSpinner(true, `Arquivo ${outputName}.html criado`);
+      await htmlComposer.save(html, htmlPath);
+      
+      // Mostra resultado da iteração
+      const rangeStatus = iterationResult.isWithinRange 
+        ? '✓ dentro do range' 
+        : '⚠ fora do range';
+      logger.stopSpinner(true, `Arquivo ${outputName}.html criado (${iterationResult.attempts} tentativa(s), ${iterationResult.finalMeasurement.pageCount} página(s) ${rangeStatus})`);
       
       const formats: string[] = [];
       let pdfPath: string | undefined;
       let markdownPath: string | undefined;
       
-      // 6. Geração PDF (se solicitado)
-      if (format === 'pdf' || format === 'all') {
-        logger.startSpinner('Convertendo para PDF...');
+      // HTML sempre é gerado (necessário para os outros formatos)
+      formats.push('html');
+      
+      // 4. Geração PDF (se solicitado)
+      if (requestedFormats.includes('pdf')) {
+        currentStep += 1;
+        logger.startSpinner('Convertendo para PDF...', { current: currentStep, total: totalSteps });
         const pdfGenerator = new PDFGenerator();
         pdfPath = path.join(outputDir, `${outputName}.pdf`);
         await pdfGenerator.generate(html, pdfPath);
         formats.push('pdf');
         logger.stopSpinner(true, `Arquivo ${outputName}.pdf criado`);
         
-        // Validação automática do PDF
-        if (format === 'all') {
-          logger.startSpinner('Validando compatibilidade ATS...');
+        // Validação automática do PDF (apenas se houver análise de vaga)
+        if (jobAnalysis) {
+          currentStep += 1;
+          logger.startSpinner('Validando compatibilidade ATS...', { current: currentStep, total: totalSteps });
           const validator = new ResumeValidator();
           const validation = await validator.validatePDF(pdfPath, jobAnalysis.keywords);
           logger.stopSpinner(true, `Validação concluída (Score: ${validation.score}/100)`);
@@ -186,17 +249,16 @@ program
         }
       }
       
-      // 7. Geração Markdown (se solicitado)
-      if (format === 'markdown' || format === 'all') {
-        logger.startSpinner('Gerando Markdown para Gupy...');
+      // 5. Geração Markdown (se solicitado)
+      if (requestedFormats.includes('markdown')) {
+        currentStep += 1;
+        logger.startSpinner('Gerando Markdown para Gupy...', { current: currentStep, total: totalSteps });
         const markdownGenerator = new MarkdownGenerator();
         markdownPath = path.join(outputDir, `${outputName}-gupy.txt`);
         await markdownGenerator.generate(html, markdownPath);
         formats.push('markdown');
         logger.stopSpinner(true, `Arquivo ${outputName}-gupy.txt criado`);
       }
-      
-      formats.push('html');
       
       // 8. Salva no histórico
       try {
@@ -218,10 +280,10 @@ program
         storage.saveGeneratedCV({
           jobId: jobId,
           jobAnalysisId: jobAnalysisId,
-          template,
+          role,
           outputName,
           formats,
-          matchScore: jobAnalysis.matchScore,
+          matchScore: jobAnalysis?.matchScore,
           filePathHtml: htmlPath,
           filePathPdf: pdfPath,
           filePathMarkdown: markdownPath,
@@ -237,16 +299,27 @@ program
       logger.success('Currículo gerado com sucesso!');
       logger.break();
       
-      logger.table({
-        'Match Score': `${jobAnalysis.matchScore}%`,
-        'Keywords Match': `${jobAnalysis.keywords.length} identificadas`,
+      const tableData: Record<string, string> = {
         'Formats': formats.join(', '),
         'HTML': htmlPath,
         ...(pdfPath ? { 'PDF': pdfPath } : {}),
         ...(markdownPath ? { 'Markdown': markdownPath } : {}),
-      });
+        'Iterações HTML': `${iterationResult.attempts}`,
+        'Páginas': `${iterationResult.finalMeasurement.pageCount} (${iterationResult.finalMeasurement.heightInPages.toFixed(2)} páginas)`,
+        'Status': iterationResult.isWithinRange ? '✓ Dentro do range (1.9-2.2)' : '⚠ Fora do range',
+      };
       
-      if (jobAnalysis.gaps.length > 0) {
+      if (jobAnalysis) {
+        tableData['Match Score'] = `${jobAnalysis.matchScore}%`;
+        tableData['Keywords Match'] = `${jobAnalysis.keywords.length} identificadas`;
+      } else {
+        tableData['Role'] = role;
+        tableData['Tipo'] = 'Currículo genérico (sem otimização para vaga específica)';
+      }
+      
+      logger.table(tableData);
+      
+      if (jobAnalysis && jobAnalysis.gaps.length > 0) {
         logger.break();
         logger.warning(`Gaps identificados (${jobAnalysis.gaps.length}):`);
         jobAnalysis.gaps.slice(0, 3).forEach((gap) => {
@@ -300,13 +373,16 @@ program
       logger.info(`Score ATS: ${statusColor(`${result.score}/100`)}`);
       logger.break();
       
+      const { minWords, maxWords, maxPages } = config.validation.length;
+      const { min: minKeywordDensity, max: maxKeywordDensity } = config.validation.keywordDensity;
+      
       logger.table({
         'Texto Extraível': result.details.hasExtractableText ? '✓ Sim' : '✗ Não',
         'Compatível ATS': result.details.atsCompatible ? '✓ Sim' : '✗ Não',
-        'Páginas': `${result.details.pageCount} ${result.details.pageCount <= 2 ? '✓' : '⚠'}`,
-        'Palavras': result.details.wordCount ? `${result.details.wordCount} ${result.details.wordCount >= 300 && result.details.wordCount <= 1000 ? '✓' : '⚠'}` : 'N/A',
+        'Páginas': `${result.details.pageCount} ${result.details.pageCount <= maxPages ? '✓' : '⚠'}`,
+        'Palavras': result.details.wordCount ? `${result.details.wordCount} ${result.details.wordCount >= minWords && result.details.wordCount <= maxWords ? '✓' : '⚠'}` : 'N/A',
         'Densidade Keywords': result.details.keywordDensity > 0 
-          ? `${result.details.keywordDensity.toFixed(2)}% ${result.details.keywordDensity >= 5 && result.details.keywordDensity <= 10 ? '✓' : '⚠'}`
+          ? `${result.details.keywordDensity.toFixed(2)}% ${result.details.keywordDensity >= minKeywordDensity && result.details.keywordDensity <= maxKeywordDensity ? '✓' : '⚠'}`
           : 'N/A (sem keywords)'
       });
       
@@ -481,7 +557,6 @@ program
       logger.break();
       
       logger.info(`CLT - Salário Bruto: ${calculator.formatCurrency(comparison.clt.gross)}`);
-      const inssAmount = comparison.clt.gross - (comparison.clt.net + (comparison.clt.taxes - (comparison.clt.gross - comparison.clt.net - comparison.clt.taxes)));
       const irrfAmount = comparison.clt.taxes - (comparison.clt.gross - comparison.clt.net - comparison.clt.taxes);
       logger.table({
         'INSS': calculator.formatCurrency(Math.max(0, comparison.clt.gross - comparison.clt.net - irrfAmount)),

@@ -18,12 +18,14 @@ npm run dev -- generate [opções]
 
 ### Obrigatórias
 
-- `-t, --template <type>` - Template a usar:
-  - `tech-lead` - Foco em liderança técnica e arquitetura
-  - `senior-frontend` - Especialização em React/performance
-  - `fullstack` - Equilibra frontend/backend/infra
+- `-r, --role <title>` - Título do currículo (ex: "Tech Lead Frontend", "Senior Frontend Developer") - **obrigatório**
+  - Define o título que aparecerá no header do currículo
+  - A IA usa este role junto com a análise da vaga para decidir quais skills focar
+  - Veja sugestões de roles comuns no README principal
 
-- `-o, --output-name <name>` - Nome do arquivo de saída (sem extensão)
+- `-o, --output-name <name>` - Nome do arquivo de saída (sem extensão) - **opcional**
+  - Se não fornecido, usa padrão: "Curriculo {{role}}" (sanitizado para nome de arquivo válido)
+  - Exemplo: role "Tech Lead Frontend" → "Curriculo-Tech-Lead-Frontend"
 
 ### Entrada da Vaga (escolha uma)
 
@@ -32,11 +34,11 @@ npm run dev -- generate [opções]
 
 ### Opcionais
 
-- `--format <format>` - Formato de saída (padrão: `all`):
-  - `html` - Apenas HTML
-  - `pdf` - Apenas PDF
-  - `markdown` - Apenas Markdown para Gupy
-  - `all` - Todos os formatos
+- `--formats <formats>` - Formatos de saída separados por vírgula (padrão: `pdf`):
+  - `html` - HTML
+  - `pdf` - PDF
+  - `markdown` - Markdown para Gupy
+  - Exemplo: `--formats pdf,html,markdown` para gerar todos os formatos
 
 - `-v, --verbose` - Modo verboso com logs detalhados
 
@@ -45,10 +47,16 @@ npm run dev -- generate [opções]
 ### Usando texto direto
 
 ```bash
+# Com nome customizado
 npm start generate \
   --job-description "Vaga para Tech Lead Frontend..." \
-  --template tech-lead \
+  --role "Tech Lead Frontend" \
   --output-name btg-pactual-senior
+
+# Sem nome (usa padrão "Curriculo Tech Lead Frontend")
+npm start generate \
+  --job-description "Vaga para Tech Lead Frontend..." \
+  --role "Tech Lead Frontend"
 ```
 
 ### Usando arquivo
@@ -56,14 +64,14 @@ npm start generate \
 ```bash
 npm start generate \
   --job-file vaga.txt \
-  --template tech-lead \
+  --role "Tech Lead Frontend" \
   --output-name btg-pactual-senior
 ```
 
 ### Usando flags curtas
 
 ```bash
-npm start generate -f vaga.md -t tech-lead -o btg-senior
+npm start generate -f vaga.md -r "Tech Lead Frontend" -o btg-senior
 ```
 
 ### Gerar apenas HTML
@@ -71,19 +79,28 @@ npm start generate -f vaga.md -t tech-lead -o btg-senior
 ```bash
 npm start generate \
   -f vaga.md \
-  -t senior-frontend \
+  -r "Senior Frontend Developer" \
   -o curriculo \
-  --format html
+  --formats html
 ```
 
-### Gerar apenas PDF
+### Gerar apenas PDF (padrão)
 
 ```bash
 npm start generate \
   -f vaga.md \
-  -t fullstack \
+  -r "Fullstack Developer" \
+  -o curriculo
+```
+
+### Gerar múltiplos formatos
+
+```bash
+npm start generate \
+  -f vaga.md \
+  -r "Tech Lead Frontend" \
   -o curriculo \
-  --format pdf
+  --formats pdf,html,markdown
 ```
 
 ### Modo verboso
@@ -91,80 +108,68 @@ npm start generate \
 ```bash
 npm start generate \
   -f vaga.md \
-  -t tech-lead \
+  -r "Tech Lead Frontend" \
   -o curriculo \
   --verbose
 ```
 
-## Templates Disponíveis
+## Parâmetro --role
 
-### tech-lead
+O parâmetro `--role` é obrigatório e define o título do currículo. A IA usa este role junto com a análise da vaga para decidir dinamicamente quais skills e experiências enfatizar.
 
-**Quando usar:** Para vagas de liderança técnica, arquitetura de sistemas, coordenação de equipes.
+**Como funciona:**
+- O role fornecido aparece como título no header do currículo
+- A IA analisa o role + keywords da vaga para determinar estratégia
+- Skills são priorizadas automaticamente baseado no contexto
+- Não há templates fixos - a estratégia é adaptativa
 
-**Foco:**
-- Liderança técnica e decisões arquiteturais
-- Mentoria e desenvolvimento de pessoas
-- Impacto organizacional
-- Experiências de coordenação
-
-### senior-frontend
-
-**Quando usar:** Para vagas especializadas em frontend, React, performance, UI/UX.
-
-**Foco:**
-- Expertise técnica profunda em React/Next.js
-- Otimizações de performance
-- Experiências com UI/UX
-- Detalhes de implementação técnica
-
-### fullstack
-
-**Quando usar:** Para vagas que exigem conhecimento completo de stack, integração frontend/backend.
-
-**Foco:**
-- Versatilidade técnica
-- Experiências end-to-end
-- Conhecimento de infra e DevOps
-- Integração entre sistemas
+**Sugestões de roles comuns:**
+- Tech Lead Frontend / Tech Lead
+- Senior Frontend Developer
+- Fullstack Developer
+- Backend Developer
+- Mobile Developer
+- DevOps Engineer
+- E muitos outros - use o título que melhor descreve o cargo
 
 ## Formatos de Saída
 
-### HTML (`--format html`)
+### HTML (`--formats html`)
 
 - Arquivo: `output/{output-name}.html`
 - Uso: Visualização no navegador, edição manual
 - Formato: HTML completo com CSS embutido
+- Nota: HTML é sempre gerado (necessário para os outros formatos)
 
-### PDF (`--format pdf`)
+### PDF (`--formats pdf` - padrão)
 
 - Arquivo: `output/{output-name}.pdf`
 - Uso: Envio para recrutadores, impressão
 - Formato: PDF gerado a partir do HTML
-- Validação ATS: Automática quando gerado com `--format all`
+- Validação ATS: Automática quando há análise de vaga
 
-### Markdown (`--format markdown`)
+### Markdown (`--formats markdown`)
 
 - Arquivo: `output/{output-name}-gupy.txt`
 - Uso: Cópia para plataformas como Gupy, LinkedIn
 - Formato: Texto formatado em Markdown
 
-### Todos (`--format all` - padrão)
+### Múltiplos formatos
 
-- Gera todos os formatos acima
-- Executa validação ATS automática no PDF
-- Salva histórico completo no banco de dados
+- Use `--formats pdf,html,markdown` para gerar todos os formatos
+- Formatos são separados por vírgula, sem espaços
+- Exemplo: `--formats pdf,markdown` gera apenas PDF e Markdown
 
 ## Fluxo de Execução
 
-1. **Análise da Vaga** - Extrai keywords, requisitos e calcula match score
-2. **Seleção de Conteúdo** - Prioriza experiências e skills mais relevantes
-3. **Geração de Apresentação** - Cria texto personalizado de apresentação
-4. **Otimização Estratégica** - Ajusta conteúdo baseado no template escolhido
-5. **Geração HTML** - Monta o currículo HTML otimizado
-6. **Geração PDF** (se solicitado) - Converte HTML para PDF
-7. **Geração Markdown** (se solicitado) - Cria versão texto para plataformas
-8. **Validação ATS** (se `--format all`) - Valida compatibilidade do PDF
+1. **Análise da Vaga** (opcional - apenas se houver descrição de vaga) - Extrai keywords, requisitos e calcula match score
+2. **Seleção de Conteúdo e Geração de Apresentação** (combinado) - Prioriza experiências, skills e certificações mais relevantes + gera texto de apresentação personalizado
+3. **Montagem HTML** - Monta HTML completo do currículo garantindo 2 páginas A4 e coerência total
+4. **Geração PDF** (se solicitado via `--formats`) - Converte HTML para PDF
+5. **Geração Markdown** (se solicitado via `--formats`) - Cria versão texto para plataformas
+6. **Validação ATS** (se PDF gerado e houver análise de vaga) - Valida compatibilidade do PDF
+
+**Nota:** O fluxo foi simplificado de 8 para 6 etapas. A seleção de conteúdo e geração de apresentação agora são combinadas em uma única etapa, e a montagem HTML garante automaticamente que o currículo caiba em 2 páginas A4.
 
 ## Saída Esperada
 

@@ -221,7 +221,7 @@ Sempre use formato completo: "Mês Ano - Mês Ano" ou "Mês Ano - Presente"
 
 ### 1. data-company
 - Use slug único para cada empresa (lowercase, hífens)
-- Exemplos: "ilegra", "repassa", "sistema-gerencial-txai", "missoes-junior"
+- Exemplos: "empresa-a", "empresa-b", "sistema-gerencial-xyz", "projeto-abc"
 - Se mesma empresa, use mesmo ID em múltiplos `<article>`
 
 ### 2. data-keywords (no experience-item)

@@ -90,25 +90,35 @@ Isso mostrará:
 
 ### 3. Gere seu currículo otimizado
 
-Com base na análise, gere um currículo personalizado:
+Você pode gerar um currículo de duas formas:
+
+**Opção A: Com descrição de vaga (otimizado para vaga específica)**
 
 ```bash
 npm run dev -- generate \
   -f vaga.md \
-  -t tech-lead \
-  -o meu-curriculo
+  -r "Tech Lead Frontend"
+```
+
+**Opção B: Sem descrição de vaga (currículo genérico baseado no role)**
+
+```bash
+npm run dev -- generate \
+  -r "Tech Lead Frontend"
 ```
 
 **Parâmetros:**
-- `-f vaga.md` - Arquivo com descrição da vaga
-- `-t tech-lead` - Template (tech-lead, senior-frontend ou fullstack)
-- `-o meu-curriculo` - Nome do arquivo de saída
+- `-f vaga.md` - Arquivo com descrição da vaga (opcional)
+- `-j, --job-description <text>` - Descrição da vaga como texto (opcional)
+- `-r "Tech Lead Frontend"` - Role (título do currículo) - **obrigatório**
+- `-o meu-curriculo` - Nome do arquivo de saída (opcional, padrão: "Curriculo {{role}}")
+
+**Nota:** Se você não fornecer descrição da vaga, o sistema gerará um currículo genérico baseado apenas no role fornecido, sem otimização para uma vaga específica.
 
 **Prompts usados no processo:**
-1. `01-analise-vaga.md` - Analisa a vaga e extrai keywords
-2. `02-selecao-conteudo.md` - Seleciona experiências e skills mais relevantes do seu currículo base
-3. `03-gerador-apresente-se.md` - Gera texto de apresentação personalizado
-4. `04-variacoes-estrategicas.md` - Ajusta conteúdo baseado no template escolhido
+1. `01-analise-vaga.md` - Analisa a vaga e extrai keywords (opcional - apenas se houver descrição de vaga)
+2. `02-selecao-conteudo-e-apresentacao.md` - Seleciona experiências, skills e certificações mais relevantes + gera texto de apresentação personalizado
+3. `03-montagem-html.md` - Monta HTML completo do currículo garantindo 2 páginas e coerência total
 
 ### 4. Verifique os resultados
 
@@ -135,6 +145,54 @@ npm run dev -- serve -f output/meu-curriculo.html
 
 Isso abrirá o navegador com live reload - edite o HTML e veja as mudanças em tempo real.
 
+### Parâmetro --role
+
+O parâmetro `--role` é obrigatório e define o título do currículo. A IA usa este role junto com a análise da vaga para decidir quais skills e experiências enfatizar.
+
+**Sugestões de roles comuns:**
+
+**Frontend:**
+- Senior Frontend Developer
+- Frontend Engineer
+- React Developer
+- Frontend Tech Lead
+
+**Backend:**
+- Backend Developer
+- Backend Engineer
+- Senior Backend Developer
+- API Developer
+
+**Fullstack:**
+- Fullstack Developer
+- Full Stack Engineer
+- Fullstack Tech Lead
+
+**Mobile:**
+- Mobile Developer
+- React Native Developer
+- Flutter Developer
+- iOS/Android Developer
+
+**Liderança:**
+- Tech Lead
+- Engineering Manager
+- Technical Lead
+- Senior Tech Lead
+
+**DevOps/Infra:**
+- DevOps Engineer
+- SRE (Site Reliability Engineer)
+- Cloud Engineer
+- Infrastructure Engineer
+
+**Outros:**
+- QA Engineer
+- Test Engineer
+- Product Engineer
+- Solutions Architect
+- Software Architect
+
 ### Sobre os Prompts
 
 O sistema usa prompts de IA para processar e otimizar currículos. Cada prompt tem uma função específica:
@@ -142,7 +200,7 @@ O sistema usa prompts de IA para processar e otimizar currículos. Cada prompt t
 - **Análise de vaga** - Entende o que a vaga busca
 - **Seleção de conteúdo** - Escolhe o que destacar do seu currículo
 - **Geração de texto** - Cria apresentações personalizadas
-- **Otimização estratégica** - Adapta conteúdo ao perfil da vaga
+- **Otimização estratégica** - Adapta conteúdo baseado no role + análise da vaga (IA decide dinamicamente quais skills focar)
 
 Para mais detalhes, consulte [docs/README-PROMPTS.md](docs/README-PROMPTS.md).
 

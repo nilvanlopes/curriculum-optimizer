@@ -40,19 +40,19 @@ echo ""
 echo "=========================================="
 echo "TESTE 2: Gerar currículo otimizado (tech-lead)"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --template tech-lead --output-name test-tech-lead
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-tech-lead
 
 echo ""
 echo "=========================================="
 echo "TESTE 3: Gerar currículo otimizado (senior-frontend)"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --template senior-frontend --output-name test-senior-frontend
+npm run dev -- generate --job-file test-vaga.md --role "Senior Frontend Developer" --output-name test-senior-frontend
 
 echo ""
 echo "=========================================="
 echo "TESTE 4: Gerar currículo otimizado (fullstack)"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --template fullstack --output-name test-fullstack
+npm run dev -- generate --job-file test-vaga.md --role "Fullstack Developer" --output-name test-fullstack
 
 echo ""
 echo "=========================================="
@@ -74,19 +74,19 @@ echo ""
 echo "=========================================="
 echo "TESTE 7: Gerar apenas HTML"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --template tech-lead --output-name test-html-only --format html
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-html-only --format html
 
 echo ""
 echo "=========================================="
 echo "TESTE 8: Gerar apenas PDF"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --template tech-lead --output-name test-pdf-only --format pdf
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-pdf-only --format pdf
 
 echo ""
 echo "=========================================="
 echo "TESTE 9: Gerar apenas Markdown"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --template tech-lead --output-name test-markdown-only --format markdown
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-markdown-only --format markdown
 
 echo ""
 echo "=========================================="

@@ -1,3 +1,4 @@
+import { config } from '../config.js';
 import type { SalaryComparison } from '../types.js';
 
 /**
@@ -62,7 +63,7 @@ export class SalaryCalculator {
   private calculatePJTaxes(grossPJ: number): number {
     // Simples Nacional - Faixa 1 (até 180.000/ano = 15.000/mês): 6% sobre faturamento
     // Para valores maiores, usar alíquota efetiva maior, mas simplificando para 6%
-    const taxRate = 0.06;
+    const taxRate = config.salary.pjTaxRate;
     return Math.round(grossPJ * taxRate * 100) / 100;
   }
 
@@ -154,8 +155,8 @@ export class SalaryCalculator {
     // PJ - Cálculos
     const pjTaxes = this.calculatePJTaxes(pjGross);
     const pjReserves = this.calculatePJReserves(pjGross);
-    const contador = 300; // Custo fixo estimado
-    const pjSaude = 800; // Custo estimado plano de saúde PJ
+    const contador = config.salary.pjAccountantCost;
+    const pjSaude = config.salary.pjHealthInsuranceCost;
     const pjCosts = contador + pjSaude;
     const pjNet = pjGross - pjTaxes - pjReserves - pjCosts;
     const pjTotal = pjNet; // Total disponível já considera reservas

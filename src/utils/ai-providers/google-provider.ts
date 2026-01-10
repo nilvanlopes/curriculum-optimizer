@@ -25,9 +25,14 @@ export class GoogleProvider implements IAProvider {
     options?: {
       maxTokens?: number;
       temperature?: number;
+      enableWebSearch?: boolean;
     }
   ): Promise<string> {
     try {
+      // Gemini 1.5 Pro pode ter acesso a busca web em alguns casos
+      // Quando enableWebSearch estiver habilitado, o prompt já instrui a IA
+      // Por enquanto, confiamos na instrução do prompt
+
       const model = this.genAI.getGenerativeModel({
         model: this.model,
         generationConfig: {

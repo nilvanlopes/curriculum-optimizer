@@ -11,6 +11,7 @@ export interface IAProvider {
     options?: {
       maxTokens?: number;
       temperature?: number;
+      enableWebSearch?: boolean;
     }
   ): Promise<string>;
 }

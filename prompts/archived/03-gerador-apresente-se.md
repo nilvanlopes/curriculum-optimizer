@@ -21,13 +21,13 @@ Crie um texto de apresentação personalizado com as seguintes características:
 
 ```json
 {
-  "presentationText": "Tech Lead Frontend com 6+ anos especializado em React, Next.js e arquiteturas microfrontend. Expertise comprovada em otimização de performance (redução de +2s em loading), liderança de equipes (5+ devs) e entrega de sistemas escaláveis. Ansioso para aplicar essa experiência em [nome da empresa].",
-  "keywordsUsed": ["React", "Next.js", "Microfrontend", "Performance", "Liderança"],
+  "presentationText": "[Role] com [X] anos de experiência especializado em [Tecnologias principais]. Expertise comprovada em [Área de destaque] (exemplo: redução de tempo de carregamento), [Segunda área] e entrega de [Tipo de sistemas]. Ansioso para aplicar essa experiência em [nome da empresa].",
+  "keywordsUsed": ["[Keyword 1]", "[Keyword 2]", "[Keyword 3]", "[Keyword 4]", "[Keyword 5]"],
   "length": 287,
   "variations": {
-    "short": "Tech Lead Frontend (6+ anos) | React, Next.js, Microfrontend | Performance & Liderança Técnica",
-    "medium": "Tech Lead Frontend com 6+ anos em React, Next.js e arquiteturas escaláveis. Experiência em otimização de performance e liderança de equipes. Match: 87% com a vaga.",
-    "linkedin": "Com 6+ anos como Tech Lead Frontend, especializei-me em React, Next.js e arquiteturas microfrontend. Tenho histórico de reduzir tempos de carregamento em +2s, liderar equipes de 5+ desenvolvedores e entregar sistemas que escalam para centenas de milhares de usuários. Estou animado para trazer essa experiência para [empresa]."
+    "short": "[Role] ([X] anos) | [Tecnologias] | [Áreas de destaque]",
+    "medium": "[Role] com [X] anos em [Tecnologias] e [Área]. Experiência em [Competências relevantes]. Match: [X]% com a vaga.",
+    "linkedin": "Com [X] anos como [Role], especializei-me em [Tecnologias]. Tenho histórico de [Conquistas quantificáveis] e entregar sistemas que [Impacto]. Estou animado para trazer essa experiência para [empresa]."
   }
 }
 ```

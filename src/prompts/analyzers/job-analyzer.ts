@@ -1,11 +1,24 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import type { JobAnalysisResult } from '../../types.js';
 import { aiClient } from '../../utils/ai-client.js';
+import { ProfileExtractor } from '../../utils/profile-extractor.js';
 import { storage } from '../../utils/storage.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Analisador de vagas usando IA
  */
 export class JobAnalyzer {
+  private templatePath: string;
+
+  constructor(templatePath?: string) {
+    this.templatePath = templatePath || path.join(__dirname, '../../templates/base-curriculum.html');
+  }
+
   /**
    * Analisa uma descrição de vaga e retorna resultados estruturados
    */
@@ -14,15 +27,22 @@ export class JobAnalyzer {
     candidateProfile?: string,
     options?: { saveToHistory?: boolean; metadata?: { title?: string; company?: string } }
   ): Promise<JobAnalysisResult> {
-    // Perfil padrão do candidato (pode ser expandido depois)
-    const defaultProfile = `
-Tech Lead Frontend com 6+ anos de experiência em React, Next.js, TypeScript.
-Experiência em arquiteturas microfrontend, otimização de performance e liderança técnica.
-Stack principal: React 18, Next.js 14, TypeScript, AWS, CI/CD, Git, Scrum.
-Experiências: Ilegra (Tech Lead), Repassa (Senior Frontend), Txai (Tech Lead).
-    `.trim();
-
-    const profile = candidateProfile || defaultProfile;
+    // Tenta extrair perfil do template HTML se não fornecido
+    let profile = candidateProfile;
+    if (!profile) {
+      try {
+        if (fs.existsSync(this.templatePath)) {
+          const extracted = ProfileExtractor.extractFromTemplate(this.templatePath);
+          profile = extracted.profileText;
+        } else {
+          // Se não houver template, usa perfil genérico mínimo
+          profile = 'Perfil do candidato não disponível. Análise baseada apenas na descrição da vaga.';
+        }
+      } catch (error) {
+        // Se houver erro, usa perfil genérico mínimo
+        profile = 'Perfil do candidato não disponível. Análise baseada apenas na descrição da vaga.';
+      }
+    }
 
     try {
       const result = await aiClient.callJSON<JobAnalysisResult>(

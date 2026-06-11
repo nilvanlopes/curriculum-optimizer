@@ -58,6 +58,7 @@ export class AIClient {
       maxTokens?: number;
       temperature?: number;
       enableWebSearch?: boolean;
+      jsonResponse?: boolean;
     }
   ): Promise<string> {
     try {
@@ -70,6 +71,7 @@ export class AIClient {
         maxTokens: options?.maxTokens,
         temperature: options?.temperature,
         enableWebSearch: options?.enableWebSearch,
+        jsonResponse: options?.jsonResponse,
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -91,7 +93,10 @@ export class AIClient {
       enableWebSearch?: boolean;
     }
   ): Promise<T> {
-    const response = await this.call(promptFileName, placeholders, options);
+    const response = await this.call(promptFileName, placeholders, {
+      ...options,
+      jsonResponse: true,
+    });
 
     // Tenta extrair JSON da resposta (pode ter markdown ou texto antes/depois)
     // Primeiro, tenta extrair de code blocks markdown

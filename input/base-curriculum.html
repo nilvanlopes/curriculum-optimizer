@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nilvan Lopes - Desenvolvedor Web Full Stack</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { max-width: 210mm; margin: 0 auto; color: #172033; font: 12px/1.4 Arial, sans-serif; }
+    .header { border-bottom: 2px solid #1f4e79; padding-bottom: 10px; }
+    .header h1 { margin: 0; font-size: 28px; }
+    .title { color: #1f4e79; font-size: 16px; font-weight: 700; }
+    .contact-info { display: flex; flex-wrap: wrap; gap: 5px 14px; margin-top: 6px; }
+    .summary { margin: 12px 0; }
+    .section { margin-top: 14px; }
+    .section-title { border-bottom: 1px solid #9aa8b5; color: #1f4e79; font-size: 16px; margin: 0 0 8px; }
+    .experience-item { margin-bottom: 11px; }
+    .experience-header { display: flex; justify-content: space-between; gap: 10px; }
+    .job-title { font-size: 14px; margin: 0; }
+    .company-name { font-weight: 700; }
+    .achievements { margin: 5px 0; padding-left: 20px; }
+    .tech-stack { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tech-tag { background: #edf2f7; border-radius: 3px; padding: 2px 5px; }
+    .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; }
+    .skill-category-title { font-weight: 700; }
+    a { color: inherit; }
+  </style>
+</head>
+<body class="template-tech-lead" data-template="tech-lead">
+  <header class="header">
+    <h1>Nilvan Lopes</h1>
+    <div class="title">Desenvolvedor Web Full Stack</div>
+    <div class="contact-info">
+      <span>Palmas - TO</span><span>(63) 99223-0471</span>
+      <a href="mailto:nilvanlopes@outlook.com">nilvanlopes@outlook.com</a>
+      <a href="https://www.linkedin.com/in/nilvan-lopes/">LinkedIn</a>
+      <a href="https://github.com/nilvanlopes">GitHub</a>
+    </div>
+  </header>
+
+  <section class="summary" data-customizable="summary">
+    Desenvolvedor Web Full Stack com experiência profissional e projetos pessoais, focado em aplicações web, interfaces responsivas, APIs e aprendizado contínuo.
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Experiência Profissional</h2>
+    <article class="experience-item" data-company="niceplanet" data-keywords="react,php,python,nodejs,sql,git,fullstack" data-relevance="high">
+      <div class="experience-header"><h3 class="job-title">Desenvolvedor FullStack Júnior</h3><span class="period">2025</span></div>
+      <div class="company-name">Niceplanet</div>
+      <ul class="achievements">
+        <li class="achievement" data-category="development" data-impact="high" data-keywords="react,php,python,nodejs,sql" data-metrics="false">Desenvolvimento full stack com React, PHP, Python, NodeJS e SQL.</li>
+        <li class="achievement" data-category="collaboration" data-impact="medium" data-keywords="git" data-metrics="false">Versionamento e colaboração de código com Git.</li>
+      </ul>
+      <div class="tech-stack"><span class="tech-tag">React</span><span class="tech-tag">PHP</span><span class="tech-tag">Python</span><span class="tech-tag">NodeJS</span><span class="tech-tag">SQL</span><span class="tech-tag">Git</span></div>
+    </article>
+
+    <article class="experience-item" data-company="projetos-pessoais" data-keywords="html,css,javascript,sass,responsividade,apis,quarkus,java" data-relevance="medium">
+      <div class="experience-header"><h3 class="job-title">Projetos Pessoais</h3><span class="period">Portfólio</span></div>
+      <div class="company-name">Desenvolvimento independente</div>
+      <ul class="achievements">
+        <li class="achievement" data-category="frontend" data-impact="medium" data-keywords="react,css,responsividade,componentes" data-metrics="false">Landing page inspirada no Banco Neon, com animações, responsividade e reutilização de componentes.</li>
+        <li class="achievement" data-category="frontend" data-impact="medium" data-keywords="sass,responsividade" data-metrics="false">Landing page da Hostinger com foco em responsividade e SASS.</li>
+        <li class="achievement" data-category="frontend" data-impact="medium" data-keywords="javascript,localstorage,json,dark-mode" data-metrics="false">Ficha web para RPG com persistência em localStorage, importação e exportação JSON, responsividade e modo escuro.</li>
+        <li class="achievement" data-category="backend" data-impact="medium" data-keywords="java,quarkus,apis-rest" data-metrics="false">Projetos de criação e consumo de APIs, incluindo Quarkus JPA e o Santander Bootcamp 2023.</li>
+      </ul>
+      <div class="tech-stack"><span class="tech-tag">HTML</span><span class="tech-tag">CSS</span><span class="tech-tag">JavaScript</span><span class="tech-tag">SASS</span><span class="tech-tag">Java</span><span class="tech-tag">Quarkus</span><span class="tech-tag">APIs REST</span></div>
+    </article>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Competências Técnicas</h2>
+    <div class="skills-grid">
+      <div class="skill-category" data-category="frontend"><div class="skill-category-title">Frontend</div><div class="skill-list">HTML, CSS, JavaScript, React, Angular, SASS, responsividade, componentização</div></div>
+      <div class="skill-category" data-category="backend"><div class="skill-category-title">Backend e APIs</div><div class="skill-list">PHP, Python, Java, NodeJS, Spring, Quarkus, APIs REST</div></div>
+      <div class="skill-category" data-category="data"><div class="skill-category-title">Dados</div><div class="skill-list">SQL</div></div>
+      <div class="skill-category" data-category="infrastructure"><div class="skill-category-title">Infraestrutura</div><div class="skill-list">Docker, Kubernetes, AWS</div></div>
+      <div class="skill-category" data-category="tools"><div class="skill-category-title">Ferramentas</div><div class="skill-list">Git, Visual Studio Code, Figma, Adobe XD</div></div>
+    </div>
+  </section>
+
+  <section class="section education">
+    <h2 class="section-title">Formação Acadêmica</h2>
+    <ul>
+      <li>Curso Superior em Análise e Desenvolvimento de Sistemas - Unitins, 5º período</li>
+      <li>Sistemas de Informação - Unitins, 7 períodos, 2016</li>
+      <li>Redes de Computadores - Colégio Militar de Palmas, 2015</li>
+    </ul>
+  </section>
+
+  <section class="section certifications">
+    <h2 class="section-title">Cursos e Certificações</h2>
+    <ul class="certifications-list">
+      <li class="achievement" data-category="development" data-impact="medium">FullStack Java e Angular - DIO, 2023</li>
+      <li class="achievement" data-category="data" data-impact="medium">Machine Learning - DIO, 2024</li>
+      <li class="achievement" data-category="systems" data-impact="low">Windows 10 Enterprise</li>
+      <li class="achievement" data-category="systems" data-impact="low">Google Workspace</li>
+      <li class="achievement" data-category="management" data-impact="low">ITIL</li>
+    </ul>
+  </section>
+
+  <section class="section languages">
+    <h2 class="section-title">Idiomas</h2>
+    <p>Português nativo | Inglês intermediário para leitura e escrita técnica</p>
+  </section>
+</body>
+</html>

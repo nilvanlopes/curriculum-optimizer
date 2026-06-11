@@ -10,12 +10,12 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['test/**/*.test.ts'],
-    // Limita testes em paralelo para evitar sobrecarga
+    // Os testes CLI compartilham o mesmo SQLite; serialize para evitar SQLITE_BUSY.
     pool: 'threads',
     poolOptions: {
       threads: {
-        singleThread: false,
-        maxThreads: 2, // Reduzido para evitar sobrecarga
+        singleThread: true,
+        maxThreads: 1,
         minThreads: 1,
       },
     },

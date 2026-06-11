@@ -590,6 +590,10 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
     let lastMeasurement: PDFMeasurement | null = null;
     let feedback: HTMLRegenerationFeedback | null = null;
     let adjustedContentSelection = contentSelection; // Mantém versão ajustada do contentSelection
+    let bestHTML = '';
+    let bestMeasurement: PDFMeasurement | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    let attemptsWithoutImprovement = 0;
 
     while (attempt < maxIterations) {
       attempt++;
@@ -599,7 +603,15 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
 
       // Se PDF está muito curto E não é a primeira tentativa, expande contentSelection programaticamente
       if (feedback && feedback.adjustment === 'expand' && attempt > 1) {
-        adjustedContentSelection = this.expandContentSelection(adjustedContentSelection, attempt);
+        const expandedContentSelection = this.expandContentSelection(adjustedContentSelection, attempt);
+
+        if (JSON.stringify(expandedContentSelection) === JSON.stringify(adjustedContentSelection)) {
+          console.log(chalk.yellow('⚠'), 'Todo o conteúdo disponível já foi incluído; encerrando ajustes de paginação.');
+          attempt--;
+          break;
+        }
+
+        adjustedContentSelection = expandedContentSelection;
         console.log(chalk.blue('ℹ'), `Expandindo conteúdo programaticamente (tentativa ${attempt})`);
         console.log(chalk.blue('  →'), `Adicionando mais conquistas às experiências`);
       }
@@ -637,6 +649,20 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
 
       // Verifica se está no range desejado
       const isWithinRange = pdfGenerator.isWithinDesiredRange(measurement);
+      const distanceFromRange = measurement.heightInPages < config.iterativeLoop.minPages
+        ? config.iterativeLoop.minPages - measurement.heightInPages
+        : measurement.heightInPages > config.iterativeLoop.maxPages
+          ? measurement.heightInPages - config.iterativeLoop.maxPages
+          : 0;
+
+      if (distanceFromRange < bestDistance) {
+        bestDistance = distanceFromRange;
+        bestHTML = currentHTML;
+        bestMeasurement = measurement;
+        attemptsWithoutImprovement = 0;
+      } else {
+        attemptsWithoutImprovement++;
+      }
       
       onProgress?.(
         `Tentativa ${attempt}: ${measurement.pageCount} página(s) (${measurement.heightInPages.toFixed(2)} páginas)`,
@@ -654,6 +680,11 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
         };
       }
 
+      if (attemptsWithoutImprovement >= 2) {
+        console.log(chalk.yellow('⚠'), 'Paginação não melhorou em duas tentativas; usando o melhor resultado obtido.');
+        break;
+      }
+
       // Analisa conteúdo para criar feedback (usa adjustedContentSelection)
       const analysis = this.analyzeHTMLContent(currentHTML, adjustedContentSelection);
       
@@ -663,9 +694,9 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
 
     // Não conseguiu convergir, retorna o melhor resultado
     return {
-      html: currentHTML,
+      html: bestHTML || currentHTML,
       attempts: attempt,
-      finalMeasurement: lastMeasurement!,
+      finalMeasurement: bestMeasurement || lastMeasurement!,
       isWithinRange: false,
     };
   }

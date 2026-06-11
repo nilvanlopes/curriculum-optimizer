@@ -12,6 +12,7 @@ export interface IAProvider {
       maxTokens?: number;
       temperature?: number;
       enableWebSearch?: boolean;
+      jsonResponse?: boolean;
     }
   ): Promise<string>;
 }
@@ -19,4 +20,4 @@ export interface IAProvider {
 /**
  * Tipo de provider suportado
  */
-export type AIProviderType = 'claude' | 'openai' | 'gemini';
+export type AIProviderType = 'claude' | 'openai' | 'gemini' | 'openrouter' | 'lmstudio';

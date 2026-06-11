@@ -145,9 +145,9 @@ Retorne APENAS um JSON válido, sem markdown, sem explicações adicionais. O JS
 ### Notas Importantes
 - **Busque informações reais na web primeiro** (use ferramentas de busca se disponíveis)
 - Todos os valores devem estar em BRL (Reais Brasileiros)
-- Use valores realistas e atualizados para o mercado brasileiro de tecnologia (2024-2025)
+- Use valores realistas e atualizados para o mercado brasileiro de tecnologia
 - Se encontrou dados reais do Glassdoor via busca, indique `confidence.level: "alta"` e `companySpecific: true`
 - Se a empresa não for conhecida ou não houver dados disponíveis, use médias do setor mas indique `companySpecific: false` e `confidence.level: "media"` ou `"baixa"`
 - Sempre forneça pelo menos uma estimativa, mesmo que baseada em médias gerais do mercado
 - Considere que salários CLT geralmente são menores que PJ equivalentes
-- No campo `confidence.sources`, indique as fontes usadas: se fez busca web, mencione "Busca web Glassdoor", caso contrário mencione "Conhecimento mercado BR 2024"
+- No campo `confidence.sources`, indique as fontes usadas: se fez busca web, mencione "Busca web Glassdoor"

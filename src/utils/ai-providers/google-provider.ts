@@ -6,7 +6,7 @@ import type { IAProvider } from './interface.js';
  */
 export class GoogleProvider implements IAProvider {
   private genAI: GoogleGenerativeAI;
-  private model: string = 'gemini-1.5-pro';
+  private model: string = 'gemini-2.5-pro';
 
   constructor() {
     const apiKey = process.env.GOOGLE_API_KEY;

@@ -1,5 +1,36 @@
 # CV Optimizer
 
+## Docker com OpenRouter gratuito
+
+Esta instalação mantém o fluxo original do projeto e executa o CLI em Docker. O provider é fixado em `openrouter` e o único modelo aceito é `nvidia/nemotron-3-super-120b-a12b:free`.
+
+```bash
+cp .env.example .env
+# Preencha OPENROUTER_API_KEY em .env
+docker compose build optimizer
+docker compose run --rm optimizer generate \
+  --job-file /app/input/job.txt \
+  --role "Desenvolvedor Full Stack" \
+  --output-name candidatura \
+  --formats pdf,html,markdown \
+  --template /app/input/base-curriculum.html
+```
+
+Arquivos de entrada ficam em `input/`. As saídas são gravadas em `output/` e o histórico SQLite em `data/`. O template canônico está em `src/templates/base-curriculum.html`; a integração copia esse arquivo para `input/base-curriculum.html` antes de cada execução.
+
+### LM Studio na rede local
+
+No LM Studio, carregue um modelo, inicie o servidor na porta `1234` e habilite acesso pela rede local. Depois consulte o identificador carregado em `http://localhost:1234/v1/models` e configure:
+
+```env
+AI_PROVIDER=lmstudio
+LMSTUDIO_BASE_URL=http://host.docker.internal:1234/v1
+LMSTUDIO_MODEL=qwen3-30b-a3b-instruct-2507
+LMSTUDIO_API_KEY=lm-studio
+```
+
+O Compose resolve `host.docker.internal` para o host. Se o LM Studio estiver em outra máquina, use o IP dela em `LMSTUDIO_BASE_URL`, por exemplo `http://192.168.1.20:1234/v1`.
+
 Sistema de otimização de currículos para vagas específicas, com análise semântica, múltiplos formatos de saída e validação ATS.
 
 ## 🚀 Instalação

@@ -9,7 +9,7 @@ Com base na análise da vaga fornecida (ou role se não houver vaga), analise o 
 ### 1. Seleção de Experiências Prioritárias
 - **Selecione todas as experiencias
 - **CRÍTICO: NÃO descarte experiências por serem de stack diferente. Se uma experiência fullstack tem habilidades relevantes para a vaga frontend, ela DEVE ser selecionada e priorizada.**
-- Priorize quantidade suficiente para preencher ~3 páginas sem deixar espaço vazio
+- Priorize quantidade suficiente para preencher ~2 páginas sem deixar espaço vazio
 - Ordem de prioridade (1 = mais relevante, números crescentes conforme relevância)
 - Quais conquistas (achievements) destacar de cada experiência (quantidade variável por experiência conforme relevância e espaço disponível)
 
@@ -68,6 +68,7 @@ Com base nas tecnologias coletadas:
 ### 4. Geração de Texto de Apresentação
 
 **Especificações:**
+- Gere um **rascunho forte** do Summary; ele passará por uma segunda passada de refinamento antes do HTML final
 - **Comprimento**: 200-400 caracteres (ideal: 280-350)
 - **Tom**: Profissional, confiante, direto, mas não arrogante
 - **Estrutura Obrigatória**:
@@ -77,7 +78,7 @@ Com base nas tecnologias coletadas:
 
 **Requisitos de Conteúdo:**
 - **Keywords**: Inclua 4-6 keywords críticas da vaga naturalmente (se houver análise de vaga)
-- **Métricas**: SEMPRE mencione 2-3 conquistas com números concretos (ex: "-50% erros", "+20% conversões", "+500k produtos")
+- **Métricas**: Use números concretos somente quando estiverem explicitamente presentes na fonte factual; nunca invente métricas
 - **Especificidade**: Evite clichês genéricos ("trabalho bem em equipe", "proativo", "dedicado")
 - **Personalização**: Conecte experiências do candidato com desafios da vaga/role
 - **Anos de experiência**: Infira do `candidateProfile` ou calcule da experiência mais antiga até hoje
@@ -94,7 +95,7 @@ Com base nas tecnologias coletadas:
 
 **Validações:**
 - ✅ Comprimento final: 200-400 caracteres
-- ✅ Pelo menos 2 métricas quantificáveis
+- ✅ Métricas só aparecem quando existem na fonte factual
 - ✅ 4-6 keywords incluídas (se houver análise)
 - ✅ Tom profissional e confiante
 - ✅ Sem clichês genéricos
@@ -143,16 +144,16 @@ Com base nas tecnologias coletadas:
 ### Validações Obrigatórias de Output
 
 Antes de retornar JSON, verifique:
-- ✅ `selectedExperiences.length` adequado para caber em ~3 páginas (quantidade variável conforme conteúdo disponível)
-- ✅ `selectedSkills.categories.length` adequado para ~3 páginas (quantidade variável conforme relevância)
+- ✅ `selectedExperiences.length` adequado para caber em ~2 páginas (quantidade variável conforme conteúdo disponível)
+- ✅ `selectedSkills.categories.length` adequado para caber em ~2 páginas (quantidade variável conforme relevância)
 
 - ✅ `presentationText.length >= 200 && <= 400` (comprimento obrigatório)
-- ✅ `presentationText` contém pelo menos 2 métricas (números/percentuais)
+- ✅ `presentationText` contém métricas apenas quando elas existem na fonte factual
 - ✅ Todas as tecnologias em `skills` existem no HTML fornecido
 - ✅ Todas as certificações em `selectedCertifications` existem no HTML fornecido
 - ✅ Cada experiência tem `reason` explicando por que foi selecionada
 - ✅ Campo `metadata` presente com estatísticas de seleção
-- ✅ Quantidade total de conteúdo selecionado é adequada para ~3 páginas (não muito vazio, não muito longo)
+- ✅ Quantidade total de conteúdo selecionado é adequada para ~2 páginas (não muito vazio, não muito longo)
 
 ## Critérios de Seleção Detalhados
 
@@ -175,17 +176,17 @@ Antes de retornar JSON, verifique:
      - Pleno: +10 pontos
      - Júnior: +5 pontos
 - Ordene por score total (priority 1 = maior score)
-- **Quantidade de conquistas por experiência**: Variável conforme relevância e espaço disponível (priorize experiências mais relevantes com mais conquistas, mas ajuste para caber em ~3 páginas)
+- **Quantidade de conquistas por experiência**: Variável conforme relevância e espaço disponível (priorize experiências mais relevantes com mais conquistas, mas ajuste para caber em ~2 páginas)
 
 ### Para Achievements (Conquistas)
 
 **Quantidade variável por experiência conforme relevância e espaço disponível:**
 - Priorize mais conquistas para experiências mais relevantes (priority 1-2)
-- Ajuste quantidade para caber confortavelmente em ~3 páginas
+- Ajuste quantidade para caber confortavelmente em ~2 páginas
 - Não force quantidade fixa - qualidade e relevância são mais importantes que quantidade
 
 **Critérios de Seleção de Achievements:**
-1. **Com métricas quantificáveis** (preferência máxima)
+1. **Com métricas quantificáveis na fonte** (preferência máxima)
    - Percentuais: "-50% erros", "+20% conversões"
    - Números absolutos: "+500k produtos", "5+ projetos"
    - Tempo: "redução de 2 segundos"
@@ -394,20 +395,26 @@ Se NÃO houver análise de vaga (`matchScore: 0`):
 
 {sectionPriorities}
 
+**Guarda de Factualidade para o presentationText:**
+{presentationGuardrails}
+
+**Feedback de Validação (se houver):**
+{presentationValidationFeedback}
+
 ## Instruções Críticas Finais
 
 ### Prioridades Absolutas:
 1. **NUNCA invente dados** - todas as tecnologias, certificações e achievements devem existir no HTML
-2. **Quantidade variável conforme conteúdo disponível e espaço em ~3 páginas**:
+2. **Quantidade variável conforme conteúdo disponível e espaço em ~2 páginas**:
    - Experiências: selecione todas
    - Categorias de skills: inclua todas relevantes até 6 no maximo
    - Achievements: selecione todos relevantes por experiência no maximo 5
    - Certificações: inclua todas relevantes
    - Presentation text: 200-400 caracteres (OBRIGATÓRIO)
-3. **Presentation text é OBRIGATÓRIO** - sempre inclua com métricas quantificáveis
+3. **Presentation text é OBRIGATÓRIO** - sempre inclua com factualidade; métricas só quando existirem na fonte
 4. **Não descarte experiências por stack diferente** - avalie relevância de habilidades individuais
 5. **Sempre inclua campo `metadata`** com estatísticas de seleção
-6. **Ajuste quantidade total de conteúdo para preencher adequadamente ~3 páginas** - priorize qualidade sobre quantidade fixa
+6. **Ajuste quantidade total de conteúdo para preencher adequadamente ~2 páginas** - priorize qualidade sobre quantidade fixa
 
 ### Uso das Prioridades de Seção:
 Se as prioridades de seção foram fornecidas, use-as para guiar suas decisões quando precisar reduzir conteúdo:
@@ -417,15 +424,15 @@ Se as prioridades de seção foram fornecidas, use-as para guiar suas decisões 
 - **Prioridade 1-3** (Título Profissional, Informações Adicionais): Pode remover completamente se necessário
 
 Exemplo de aplicação:
-- Ajuste quantidade de achievements por experiência conforme relevância e espaço disponível para ~3 páginas
+- Ajuste quantidade de achievements por experiência conforme relevância e espaço disponível para ~2 páginas
 - Priorize certificações mais relevantes, ajuste quantidade conforme espaço disponível
-- Inclua todas as categorias de skills relevantes, ajuste quantidade conforme necessário para ~3 páginas
+- Inclua todas as categorias de skills relevantes, ajuste quantidade conforme necessário para ~2 páginas
 - Se precisar reduzir conteúdo: comece removendo/reduzindo itens menos relevantes (seguindo prioridades de seção fornecidas)
 
 ### Quando em Dúvida:
 - **Com vaga**: priorize match com keywords obrigatórias
 - **Sem vaga**: priorize recência + tecnologias modernas + senioridade
-- **Achievements**: prefira os com métricas quantificáveis
+- **Achievements**: prefira os com métricas quantificáveis na fonte
 - **Skills**: prefira tecnologias que aparecem em múltiplas fontes
 - **Certificações**: prefira as mais recentes de plataformas reconhecidas
 
@@ -433,12 +440,12 @@ Exemplo de aplicação:
 Antes de retornar, verifique mentalmente:
 - ✅ Todos os dados vêm do HTML fornecido?
 - ✅ Presentation text tem 200-400 caracteres?
-- ✅ Presentation text tem pelo menos 2 métricas?
-- ✅ Quantidade total de conteúdo é adequada para ~3 páginas (variável conforme disponível)?
+- ✅ Presentation text usa métricas somente quando a fonte factual as contém?
+- ✅ Quantidade total de conteúdo é adequada para ~2 páginas (variável conforme disponível)?
 - ✅ Todas as experiências têm `reason` clara?
 - ✅ Campo `metadata` está completo?
 - ✅ Qualidade e relevância foram priorizadas sobre quantidade fixa?
 
 ## Output
 
-Retorne APENAS um JSON válido (sem markdown, sem json, sem explicações adicionais). O JSON deve estar completo, bem formatado e seguir exatamente a estrutura do exemplo fornecido. O campo `presentationText` é OBRIGATÓRIO e deve conter entre 200-400 caracteres com pelo menos 2 métricas quantificáveis.
+Retorne APENAS um JSON válido (sem markdown, sem json, sem explicações adicionais). O JSON deve estar completo, bem formatado e seguir exatamente a estrutura do exemplo fornecido. O campo `presentationText` é OBRIGATÓRIO e deve conter entre 200-400 caracteres, usando métricas somente se elas estiverem na fonte factual.

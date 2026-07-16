@@ -180,7 +180,7 @@ program
       logger.startSpinner('Selecionando conteúdo e gerando apresentação...', { current: currentStep, total: totalSteps });
       const contentSelector = new ContentSelector(templatePath);
       const contentSelection = jobAnalysis 
-        ? await contentSelector.selectContentAndPresentation(jobAnalysis)
+        ? await contentSelector.selectContentAndPresentation(jobAnalysis, role)
         : await contentSelector.selectContentAndPresentationByRole(role);
       logger.stopSpinner(true, 'Conteúdo selecionado e apresentação gerada');
       

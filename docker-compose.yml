@@ -31,5 +31,8 @@ services:
       LMSTUDIO_BASE_URL: ${LMSTUDIO_BASE_URL:-http://host.docker.internal:1234/v1}
       LMSTUDIO_MODEL: ${LMSTUDIO_MODEL:-}
       LMSTUDIO_API_KEY: ${LMSTUDIO_API_KEY:-lm-studio}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
       PUPPETEER_SKIP_DOWNLOAD: "true"

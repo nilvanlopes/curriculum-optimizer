@@ -5,6 +5,12 @@ import { config } from '../../config.js';
 import type { ContentSelectionResult, JobAnalysisResult } from '../../types.js';
 import { aiClient } from '../../utils/ai-client.js';
 import { ProfileExtractor } from '../../utils/profile-extractor.js';
+import {
+  buildFallbackPresentation,
+  buildValidationFeedback,
+  validatePresentationText,
+  type PresentationSourceFacts,
+} from './presentation-guard.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,18 +36,26 @@ export class ContentSelector {
   }
 
   /**
-   * Extrai perfil do candidato do template
+   * Extrai dados do perfil do candidato do template
    */
-  private extractProfile(): string {
+  private extractProfileData(): PresentationSourceFacts {
     try {
       if (fs.existsSync(this.templatePath)) {
-        const extracted = ProfileExtractor.extractFromTemplate(this.templatePath);
-        return extracted.profileText;
+        return ProfileExtractor.extractFromTemplate(this.templatePath);
       }
-      return 'Perfil do candidato extraído do currículo base.';
+      return {
+        name: 'Candidato',
+        title: '',
+        summary: '',
+        profileText: 'Perfil do candidato extraído do currículo base.',
+      };
     } catch (error) {
-      // Se falhar, retorna um perfil básico
-      return 'Perfil do candidato extraído do currículo base.';
+      return {
+        name: 'Candidato',
+        title: '',
+        summary: '',
+        profileText: 'Perfil do candidato extraído do currículo base.',
+      };
     }
   }
 
@@ -78,77 +92,267 @@ ${prioritiesFormatted}
   }
 
   /**
-   * Seleciona conteúdo e gera apresentação baseado na análise da vaga
+   * Monta a instrução de factualidade para o texto de apresentação
    */
-  async selectContentAndPresentation(
-    jobAnalysis: JobAnalysisResult
+  private buildPresentationGuardrails(
+    source: PresentationSourceFacts,
+    role: string,
+    jobAnalysis?: JobAnalysisResult,
+    validationFeedback = ''
+  ): string {
+    const allowedFacts = source.profileText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 12)
+      .join('\n- ');
+
+    const keywordsPreview = jobAnalysis?.keywords.length
+      ? `\n- Keywords da vaga: ${jobAnalysis.keywords.slice(0, 8).join(', ')}`
+      : '';
+
+    return [
+      'Regras de factualidade para o presentationText:',
+      '- Use somente fatos presentes no perfil do candidato, no role informado e na análise da vaga.',
+      '- Não invente MBAs, pós-graduações, certificações, cargos de liderança, tecnologias ou métricas.',
+      '- Use métricas apenas se estiverem explicitamente presentes na fonte factual.',
+      role ? `- Role fornecido: ${role}` : '',
+      keywordsPreview,
+      validationFeedback ? `- Feedback de validação anterior:\n${validationFeedback}` : '',
+      '- Fonte factual disponível:',
+      allowedFacts ? `- ${allowedFacts}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  /**
+   * Refina o texto de apresentação em uma segunda passada específica
+   */
+  private async refinePresentationText(
+    result: ContentSelectionResult,
+    role: string,
+    jobAnalysis: JobAnalysisResult,
+    profileData: PresentationSourceFacts,
+    validationFeedback = ''
   ): Promise<ContentSelectionResult> {
     try {
-      // Carrega template
-      const html = this.loadTemplate();
-      
-      // Extrai perfil do candidato
-      const candidateProfile = this.extractProfile();
-
-      // Prepara análise formatada para o prompt
-      const analysisFormatted = JSON.stringify(jobAnalysis, null, 2);
-      
-      // Formata prioridades de seção para orientar a IA
-      const sectionPriorities = this.formatSectionPriorities();
-
-      // Chama IA para seleção e geração de apresentação
-      const result = await aiClient.callJSON<ContentSelectionResult>(
-        '02-selecao-conteudo-e-apresentacao.md',
+      const refinement = await aiClient.callJSON<{
+        presentationText: string;
+        keywordsUsed?: string[];
+      }>(
+        '04-refinar-apresentacao.md',
         {
-          jobAnalysis: analysisFormatted,
-          curriculumHtml: html,
-          candidateProfile: candidateProfile,
-          sectionPriorities: sectionPriorities,
+          role,
+          jobAnalysis: JSON.stringify(jobAnalysis, null, 2),
+          candidateProfile: profileData.profileText,
+          presentationDraft: result.presentationText,
+          presentationGuardrails: this.buildPresentationGuardrails(
+            profileData,
+            role,
+            jobAnalysis,
+            validationFeedback
+          ),
+          validationFeedback,
         },
         {
-          maxTokens: 8192, // Aumentado para suportar geração de apresentação também
-          temperature: 0.4,
+          maxTokens: 2048,
+          temperature: 0.25,
         }
       );
 
-      // Valida que presentationText está presente e tem tamanho adequado
-      if (!result.presentationText || result.presentationText.trim().length === 0) {
+      const refinedText = refinement.presentationText?.trim();
+      if (!refinedText) {
+        return result;
+      }
+
+      return {
+        ...result,
+        presentationText: refinedText,
+        keywordsUsed: Array.isArray(refinement.keywordsUsed) && refinement.keywordsUsed.length > 0
+          ? refinement.keywordsUsed
+          : result.keywordsUsed,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.warn(`Aviso: falha ao refinar presentationText; usando rascunho original (${message})`);
+      return result;
+    }
+  }
+
+  /**
+   * Executa a chamada de seleção + apresentação e devolve o resultado cru
+   */
+  private async requestSelection(
+    role: string,
+    jobAnalysis: JobAnalysisResult,
+    validationFeedback = ''
+  ): Promise<{ result: ContentSelectionResult; profileData: PresentationSourceFacts }> {
+    const html = this.loadTemplate();
+    const profileData = this.extractProfileData();
+    const candidateProfile = profileData.profileText;
+    const analysisFormatted = JSON.stringify(jobAnalysis, null, 2);
+    const sectionPriorities = this.formatSectionPriorities();
+    const presentationGuardrails = this.buildPresentationGuardrails(
+      profileData,
+      role,
+      jobAnalysis,
+      validationFeedback
+    );
+
+    const result = await aiClient.callJSON<ContentSelectionResult>(
+      '02-selecao-conteudo-e-apresentacao.md',
+      {
+        jobAnalysis: analysisFormatted,
+        curriculumHtml: html,
+        candidateProfile,
+        role,
+        sectionPriorities,
+        presentationGuardrails,
+        presentationValidationFeedback: validationFeedback,
+      },
+      {
+        maxTokens: 8192,
+        temperature: 0.4,
+      }
+    );
+
+    return { result, profileData };
+  }
+
+  /**
+   * Valida e normaliza o resultado da seleção
+   */
+  private validateAndNormalizeSelection(
+    result: ContentSelectionResult,
+    role: string,
+    jobAnalysis: JobAnalysisResult,
+    profileData: PresentationSourceFacts,
+    fallbackPresentation?: string
+  ): ContentSelectionResult {
+    if (!result.presentationText || result.presentationText.trim().length === 0) {
+      if (fallbackPresentation) {
+        result.presentationText = fallbackPresentation;
+      } else {
         throw new Error('Erro: presentationText é obrigatório mas não foi gerado');
       }
+    }
 
-      if (result.presentationText.length < 200 || result.presentationText.length > 400) {
-        // Avisa mas não falha - pode ajustar depois
-        console.warn(`Aviso: presentationText tem ${result.presentationText.length} caracteres (ideal: 200-400)`);
+    const validation = validatePresentationText(result.presentationText, profileData, role, jobAnalysis);
+    if (!validation.valid) {
+      if (fallbackPresentation) {
+        result.presentationText = fallbackPresentation;
+      } else {
+        throw new Error(
+          `presentationText contém termos não suportados: ${validation.rejectedTerms.join(', ')}`
+        );
       }
+    }
 
-      // Valida experiências - quantidade variável conforme conteúdo disponível (IA pensa que tem 3 páginas, mas validamos em 1.9-2.2)
-      // Não limita rigidamente - permite que a IA selecione quantidade adequada
-      if (result.selectedExperiences) {
-        result.selectedExperiences.forEach((exp, index) => {
-          // Valida que achievementsToHighlight existe e não está vazio
-          if (!exp.achievementsToHighlight || exp.achievementsToHighlight.length === 0) {
-            console.warn(`Aviso: Experiência ${index + 1} (priority ${exp.priority}) não tem conquistas selecionadas`);
-          }
-          // Quantidade de conquistas é variável - a IA ajusta conforme relevância e espaço disponível
-        });
-        // Ordena por prioridade para garantir ordem correta
-        result.selectedExperiences = result.selectedExperiences.sort((a, b) => a.priority - b.priority);
+    if (result.presentationText.length < 200 || result.presentationText.length > 400) {
+      console.warn(`Aviso: presentationText tem ${result.presentationText.length} caracteres (ideal: 200-400)`);
+    }
+
+    if (result.selectedExperiences) {
+      result.selectedExperiences.forEach((exp, index) => {
+        if (!exp.achievementsToHighlight || exp.achievementsToHighlight.length === 0) {
+          console.warn(`Aviso: Experiência ${index + 1} (priority ${exp.priority}) não tem conquistas selecionadas`);
+        }
+      });
+      result.selectedExperiences = result.selectedExperiences.sort((a, b) => a.priority - b.priority);
+    }
+
+    if (result.selectedSkills && result.selectedSkills.categories) {
+      if (result.selectedSkills.categories.length === 0) {
+        console.warn('Aviso: Nenhuma categoria de skill foi selecionada');
       }
+    }
 
-      // Valida categorias de skills - quantidade variável conforme relevância (IA pensa que tem 3 páginas, mas validamos em 1.9-2.2)
-      // Não limita rigidamente - permite que a IA selecione todas as categorias relevantes
-      if (result.selectedSkills && result.selectedSkills.categories) {
-        // Apenas valida que existe e não está vazio
-        if (result.selectedSkills.categories.length === 0) {
-          console.warn('Aviso: Nenhuma categoria de skill foi selecionada');
+    return result;
+  }
+
+  /**
+   * Gera seleção com uma segunda tentativa de correção e fallback factual
+   */
+  private async generateSelectionWithRecovery(
+    role: string,
+    jobAnalysis: JobAnalysisResult
+  ): Promise<ContentSelectionResult> {
+    try {
+      const firstAttempt = await this.requestSelection(role, jobAnalysis);
+      const refinedFirstAttempt = await this.refinePresentationText(
+        firstAttempt.result,
+        role,
+        jobAnalysis,
+        firstAttempt.profileData
+      );
+      return this.validateAndNormalizeSelection(
+        refinedFirstAttempt,
+        role,
+        jobAnalysis,
+        firstAttempt.profileData
+      );
+    } catch (error) {
+      const initialError = error instanceof Error ? error.message : 'Erro desconhecido';
+      const needsRetry = initialError.includes('termos não suportados') || initialError.includes('presentationText');
+
+      if (needsRetry) {
+        try {
+          const profileData = this.extractProfileData();
+          const rejectedTerms = initialError.includes('termos não suportados')
+            ? initialError
+                .split(':')
+                .slice(1)
+                .join(':')
+                .split(',')
+                .map((term) => term.trim())
+                .filter(Boolean)
+            : [];
+          const feedback = buildValidationFeedback(profileData, rejectedTerms, role, jobAnalysis);
+          const retryAttempt = await this.requestSelection(role, jobAnalysis, feedback);
+          const refinedRetryAttempt = await this.refinePresentationText(
+            retryAttempt.result,
+            role,
+            jobAnalysis,
+            retryAttempt.profileData,
+            feedback
+          );
+          const fallbackPresentation = buildFallbackPresentation(profileData, role, jobAnalysis);
+          return this.validateAndNormalizeSelection(
+            refinedRetryAttempt,
+            role,
+            jobAnalysis,
+            retryAttempt.profileData,
+            fallbackPresentation
+          );
+        } catch (retryError) {
+          const profileData = this.extractProfileData();
+          const fallbackPresentation = buildFallbackPresentation(profileData, role, jobAnalysis);
+          return {
+            selectedExperiences: [],
+            selectedSkills: { categories: [] },
+            selectedCertifications: [],
+            presentationText: fallbackPresentation,
+            keywordsUsed: jobAnalysis.keywords.slice(0, 6),
+          };
         }
       }
 
-      // Valida certificações - quantidade variável conforme relevância (IA pensa que tem 3 páginas, mas validamos em 1.9-2.2)
-      // Não limita rigidamente - permite que a IA selecione todas as certificações relevantes
-      // Pode estar vazio se não houver certificações relevantes
+      throw error;
+    }
+  }
 
-      return result;
+  /**
+   * Seleciona conteúdo e gera apresentação baseado na análise da vaga
+   */
+  async selectContentAndPresentation(
+    jobAnalysis: JobAnalysisResult,
+    role?: string
+  ): Promise<ContentSelectionResult> {
+    try {
+      const profileData = this.extractProfileData();
+      const effectiveRole = role || profileData.title || 'Currículo';
+      return await this.generateSelectionWithRecovery(effectiveRole, jobAnalysis);
     } catch (error) {
       throw new Error(
         `Erro ao selecionar conteúdo e gerar apresentação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
@@ -169,12 +373,6 @@ ${prioritiesFormatted}
    */
   async selectContentAndPresentationByRole(role: string): Promise<ContentSelectionResult> {
     try {
-      // Carrega template
-      const html = this.loadTemplate();
-      
-      // Extrai perfil do candidato
-      const candidateProfile = this.extractProfile();
-
       // Cria uma análise mínima baseada no role
       const minimalAnalysis: JobAnalysisResult = {
         keywords: [],
@@ -191,67 +389,7 @@ ${prioritiesFormatted}
         },
         suggestions: [],
       };
-
-      // Prepara análise formatada para o prompt
-      const analysisFormatted = JSON.stringify(minimalAnalysis, null, 2);
-      
-      // Formata prioridades de seção para orientar a IA
-      const sectionPriorities = this.formatSectionPriorities();
-
-      // Chama IA para seleção e geração de apresentação com role adicional
-      const result = await aiClient.callJSON<ContentSelectionResult>(
-        '02-selecao-conteudo-e-apresentacao.md',
-        {
-          jobAnalysis: analysisFormatted,
-          curriculumHtml: html,
-          candidateProfile: candidateProfile,
-          role: role, // Passa role adicional para o prompt
-          sectionPriorities: sectionPriorities,
-        },
-        {
-          maxTokens: 8192, // Aumentado para suportar geração de apresentação também
-          temperature: 0.4,
-        }
-      );
-
-      // Valida que presentationText está presente e tem tamanho adequado
-      if (!result.presentationText || result.presentationText.trim().length === 0) {
-        throw new Error('Erro: presentationText é obrigatório mas não foi gerado');
-      }
-
-      if (result.presentationText.length < 200 || result.presentationText.length > 400) {
-        // Avisa mas não falha - pode ajustar depois
-        console.warn(`Aviso: presentationText tem ${result.presentationText.length} caracteres (ideal: 200-400)`);
-      }
-
-      // Valida experiências - quantidade variável conforme conteúdo disponível (IA pensa que tem 3 páginas, mas validamos em 1.9-2.2)
-      // Não limita rigidamente - permite que a IA selecione quantidade adequada
-      if (result.selectedExperiences) {
-        result.selectedExperiences.forEach((exp, index) => {
-          // Valida que achievementsToHighlight existe e não está vazio
-          if (!exp.achievementsToHighlight || exp.achievementsToHighlight.length === 0) {
-            console.warn(`Aviso: Experiência ${index + 1} (priority ${exp.priority}) não tem conquistas selecionadas`);
-          }
-          // Quantidade de conquistas é variável - a IA ajusta conforme relevância e espaço disponível
-        });
-        // Ordena por prioridade para garantir ordem correta
-        result.selectedExperiences = result.selectedExperiences.sort((a, b) => a.priority - b.priority);
-      }
-
-      // Valida categorias de skills - quantidade variável conforme relevância (IA pensa que tem 3 páginas, mas validamos em 1.9-2.2)
-      // Não limita rigidamente - permite que a IA selecione todas as categorias relevantes
-      if (result.selectedSkills && result.selectedSkills.categories) {
-        // Apenas valida que existe e não está vazio
-        if (result.selectedSkills.categories.length === 0) {
-          console.warn('Aviso: Nenhuma categoria de skill foi selecionada');
-        }
-      }
-
-      // Valida certificações - quantidade variável conforme relevância (IA pensa que tem 3 páginas, mas validamos em 1.9-2.2)
-      // Não limita rigidamente - permite que a IA selecione todas as certificações relevantes
-      // Pode estar vazio se não houver certificações relevantes
-
-      return result;
+      return await this.generateSelectionWithRecovery(role, minimalAnalysis);
     } catch (error) {
       throw new Error(
         `Erro ao selecionar conteúdo e gerar apresentação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`

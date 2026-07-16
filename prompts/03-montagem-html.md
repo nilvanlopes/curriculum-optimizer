@@ -1,7 +1,7 @@
 # Prompt: Montagem de HTML do Currículo
 
 ## Contexto
-Você é um especialista em estruturação de currículos profissionais em HTML. Sua tarefa é montar um currículo HTML completo baseado na seleção de conteúdo fornecida, garantindo que o resultado final caiba em EXATAMENTE 3 páginas A4 e que todas as informações estejam coerentes e otimizadas.
+Você é um especialista em estruturação de currículos profissionais em HTML. Sua tarefa é montar um currículo HTML completo baseado na seleção de conteúdo fornecida, garantindo que o resultado final caiba em EXATAMENTE 2 páginas A4 e que todas as informações estejam coerentes e otimizadas.
 
 ## Formato de Resposta Esperado
 
@@ -43,7 +43,7 @@ Você é um especialista em estruturação de currículos profissionais em HTML.
 Criar um arquivo HTML completo e válido que:
 - Contém apenas as experiências, skills e certificações selecionadas
 - Mantém a estrutura e formatação do template base
-- Garante que o currículo caiba em 3 páginas A4
+- Garante que o currículo caiba em 2 páginas A4
 - Todas as seções estão coerentes (keywords aparecem, skills alinhadas com experiências)
 - Ordem lógica: Header → Summary → Experience → Skills → Education → Certifications → Languages
 
@@ -124,11 +124,11 @@ Mantenha a estrutura HTML completa do template base, incluindo:
 
 ### 8. Garantia de 3 Páginas
 
-**IMPORTANTE: O currículo deve APROVEITAR AO MÁXIMO o espaço disponível em 3 páginas A4.**
+**IMPORTANTE: O currículo deve APROVEITAR AO MÁXIMO o espaço disponível em 2 páginas A4.**
 
 **Objetivo:**
-- Se há conteúdo suficiente disponível, **INCLUIR O MÁXIMO POSSÍVEL** nas 3 páginas
-- Só cortar conteúdo se **REALMENTE exceder 3 páginas** após incluir tudo
+- Se há conteúdo suficiente disponível, **INCLUIR O MÁXIMO POSSÍVEL** nas 2 páginas
+- Só cortar conteúdo se **REALMENTE exceder 2 páginas** após incluir tudo
 - Melhor ter conteúdo que precisa ser levemente compactado do que deixar espaço vazio
 
 **Estratégia de inclusão de conteúdo:**
@@ -144,9 +144,9 @@ Mantenha a estrutura HTML completa do template base, incluindo:
 3. **Use espaçamentos normais:**
    - **NÃO compacte preventivamente**
    - Use espaçamentos padrão do template (não reduza margin-bottom, padding, etc)
-   - O objetivo é **preencher 3 páginas**, não deixar espaço vazio
+   - O objetivo é **preencher 2 páginas**, não deixar espaço vazio
 
-4. **Apenas se REALMENTE exceder 3 páginas após incluir tudo:**
+4. **Apenas se REALMENTE exceder 2 páginas após incluir tudo:**
    - **Use as Prioridades de Seção fornecidas abaixo** para decidir o que reduzir/remover
    - **Ordem geral**: Comece removendo/reduzindo seções com MENOR prioridade (1-3), depois 4-6, depois 7-9, NUNCA remova prioridade 10
    - **Para experiências especificamente**:
@@ -158,22 +158,22 @@ Mantenha a estrutura HTML completa do template base, incluindo:
 **IMPORTANTE:**
 - Quando em dúvida, **INCLUA MAIS conteúdo** (o PDFGenerator ajustará se necessário)
 - É MELHOR ter conteúdo que precisa ser levemente compactado do que ter espaço vazio
-- O objetivo é **APROVEITAR AO MÁXIMO as 3 páginas disponíveis**
-- Há conteúdo suficiente disponível - **aproveite ao máximo as 3 páginas permitidas**
+- O objetivo é **APROVEITAR AO MÁXIMO as 2 páginas disponíveis**
+- Há conteúdo suficiente disponível - **aproveite ao máximo as 2 páginas permitidas**
 
 ### 9. Uso do Feedback de Regeneração
 
 Se o campo `regenerationFeedback` estiver presente e não for vazio/null, significa que o PDF gerado na iteração anterior NÃO ficou no range desejado de páginas. Neste caso:
 
 **Se `adjustment: "expand"` (PDF muito curto):**
-- O PDF ficou com menos de 3.0 páginas e precisa de MAIS conteúdo
+- O PDF ficou com menos de 1.9 páginas e precisa de MAIS conteúdo
 - INCLUA MAIS conquistas das experiências selecionadas
 - Se houver `missingAchievements`, estas são conquistas que DEVEM ser adicionadas
 - Use espaçamentos normais, não compacte
-- Objetivo: preencher ~3 páginas completas
+- Objetivo: preencher ~2 páginas completas
 
 **Se `adjustment: "reduce"` (PDF muito longo):**
-- O PDF ficou com mais de 3.2 páginas e precisa de MENOS conteúdo
+- O PDF ficou com mais de 2.2 páginas e precisa de MENOS conteúdo
 - **IMPORTANTE**: Use as **Prioridades de Seção** fornecidas abaixo para decidir o que reduzir/remover
 - **Ordem de redução**: Comece removendo/reduzindo seções com **MENOR prioridade** primeiro, depois vá para as maiores
 - **CRÍTICO**: Reduza APENAS conquistas dentro das experiências, NUNCA remova experiências completas
@@ -195,8 +195,8 @@ Se o campo `regenerationFeedback` estiver presente e não for vazio/null, signif
 **Campos do Feedback:**
 - `currentHeightPages`: altura atual do PDF em páginas (ex: 2.5, 3.5)
 - `currentHeightMm`: altura atual em mm
-- `targetMinPages`: altura mínima desejada (3.0)
-- `targetMaxPages`: altura máxima desejada (3.2)
+- `targetMinPages`: altura mínima desejada (1.9)
+- `targetMaxPages`: altura máxima desejada (2.2)
 - `attemptNumber`: número da tentativa atual
 - `maxAttempts`: máximo de tentativas permitidas
 - `missingAchievements`: conquistas que faltaram no HTML anterior (quando muito curto)
@@ -251,7 +251,7 @@ O HTML deve:
 - Ser válido (pode ser validado por parser HTML)
 - Manter toda a estrutura original do template (head, styles, scripts)
 - Ter todas as seções preenchidas conforme seleção
-- Estar otimizado para 3 páginas A4
+- Estar otimizado para 2 páginas A4
 - Manter formatação e estilos CSS originais
 
 ## Input
@@ -277,7 +277,7 @@ O HTML deve:
 
 **Instruções Importantes sobre Redução de Conteúdo:**
 
-**IMPORTANTE**: Quando precisar reduzir conteúdo para caber em 3 páginas, use as **Prioridades de Seção** fornecidas acima para decidir o que reduzir/remover.
+**IMPORTANTE**: Quando precisar reduzir conteúdo para caber em 2 páginas, use as **Prioridades de Seção** fornecidas acima para decidir o que reduzir/remover.
 
 **Ordem de Redução/Remoção:**
 1. **SEMPRE comece pela MENOR prioridade primeiro** (prioridade 1-3)
@@ -300,10 +300,10 @@ O HTML deve:
 **Instruções Importantes:**
 - Use o template HTML fornecido como base - NÃO crie HTML do zero
 - Extraia e reorganize seções do template base conforme a seleção fornecida
-- **CRÍTICO: Inclua TODO o conteúdo selecionado que cabe em 3 páginas. Não corte preventivamente.**
+- **CRÍTICO: Inclua TODO o conteúdo selecionado que cabe em 2 páginas. Não corte preventivamente.**
 - **CRÍTICO: NUNCA remova uma experiência completa** - Todas as experiências em `selectedExperiences` DEVEM aparecer no HTML
 - **CRÍTICO: NUNCA deixe uma experiência sem conquistas** - Cada experiência DEVE ter pelo menos 2-3 conquistas mínimas
-- **Aproveite ao máximo as 3 páginas disponíveis** 
+- **Aproveite ao máximo as 2 páginas disponíveis** 
 - Mantenha toda a estrutura, estilos CSS e formatação original
 - Preserve atributos `data-*` quando relevantes (data-company, data-category, etc.)
 - **PRESERVE EXATAMENTE os nomes de cargos** (`.job-title`) - NÃO renomeie ou modifique

@@ -1,5 +1,29 @@
 # CV Optimizer
 
+Sistema de otimização de currículos para vagas específicas de tecnologia, com análise semântica via IA, múltiplos formatos de saída e validação ATS.
+
+## 🎯 Contexto e Propósito
+
+**Problema:** Ao se candidatar a vagas de tecnologia, o profissional precisa adaptar manualmente seu currículo para cada oportunidade — priorizando tecnologias, experiências e keywords que sistemas ATS (Applicant Tracking System) buscam. Esse processo é repetitivo, propenso a erros e consome tempo a cada nova candidatura.
+
+**Solução:** O CV Optimizer automatiza todo esse fluxo de ponta a ponta:
+
+1. **Análise de Vaga** — Extrai keywords críticas, requisitos e calcula match score do candidato
+2. **Seleção Inteligente** — Usa IA para selecionar e priorizar experiências, skills e certificações mais relevantes
+3. **Montagem Otimizada** — Gera HTML com loop iterativo que garante paginação ideal (1.9–2.2 páginas A4)
+4. **Multi-formato** — Produz HTML, PDF e Markdown (para plataformas como Gupy)
+5. **Validação ATS** — Verifica compatibilidade com sistemas de triagem automatizada
+
+O sistema utiliza **tool calling para LLMs** em três etapas (análise, seleção e montagem), com prompts estruturados em Markdown e contratos bem definidos entre cada etapa.
+
+## 📑 Documentação do Workflow
+
+- **[docs/WORKFLOW.md](docs/WORKFLOW.md)** — Workflow completo documentado com diagramas Mermaid, etapas, entradas/saídas, decisões e responsáveis
+- **[workflow.yaml](workflow.yaml)** — Workflow em YAML estruturado com steps, dependências, tools e schemas
+- **[docs/CONTRACTS.md](docs/CONTRACTS.md)** — Contratos formais: schemas JSON, exemplos de payload, regras de validação e tratamento de erros
+
+---
+
 ## Docker com OpenRouter gratuito
 
 Esta instalação mantém o fluxo original do projeto e executa o CLI em Docker. O provider é fixado em `openrouter` e o único modelo aceito é `nvidia/nemotron-3-super-120b-a12b:free`.
@@ -260,17 +284,35 @@ Para documentação detalhada de cada comando, consulte os READMEs específicos:
 ```
 cv-optimizer/
 ├── src/
-│   ├── templates/        # Template HTML base
+│   ├── templates/        # Template HTML base do currículo
 │   ├── generators/       # Geradores HTML/PDF/Markdown
-│   ├── validators/       # Validadores ATS
-│   ├── calculators/      # Calculadora salarial
-│   ├── prompts/          # Classes que usam prompts de IA
-│   ├── utils/           # Utilitários (logger, storage, etc)
-│   ├── types.ts         # Tipos TypeScript
-│   └── cli.ts           # CLI principal
-├── prompts/             # Prompts para APIs de IA
-├── output/              # Currículos gerados
-├── docs/                # Documentação dos comandos
+│   ├── validators/       # Validadores ATS (compatibilidade, keywords, length)
+│   ├── calculators/      # Calculadora salarial CLT vs PJ
+│   ├── prompts/          # Tool calling: classes que chamam IA via prompts
+│   │   ├── analyzers/    #   → JobAnalyzer (análise de vaga)
+│   │   └── selectors/    #   → ContentSelector (seleção de conteúdo)
+│   ├── utils/            # Utilitários
+│   │   ├── ai-client.ts  #   → Cliente de IA (carrega prompts, chama API)
+│   │   ├── ai-providers/ #   → Providers: OpenRouter, Claude, OpenAI, Gemini, LM Studio
+│   │   ├── database.ts   #   → SQLite (histórico de análises e CVs)
+│   │   ├── storage.ts    #   → Gerenciador de persistência
+│   │   └── logger.ts     #   → Logger colorido com spinner
+│   ├── types.ts          # Contratos TypeScript (schemas de entrada/saída)
+│   └── cli.ts            # CLI principal (Commander.js)
+├── prompts/              # Prompts Markdown para APIs de IA
+│   ├── 01-analise-vaga.md
+│   ├── 02-selecao-conteudo-e-apresentacao.md
+│   └── 03-montagem-html.md
+├── docs/                 # Documentação
+│   ├── WORKFLOW.md       # Workflow documentado com diagramas
+│   └── CONTRACTS.md      # Contratos formais entre etapas
+├── workflow.yaml         # Workflow em YAML estruturado
+├── data/                 # Banco SQLite (histórico)
+├── input/                # Arquivos de entrada (vaga, template)
+├── output/               # Currículos gerados
+├── test/                 # Testes unitários e de integração
+├── docker-compose.yml    # Configuração Docker
+├── Dockerfile            # Build multi-stage
 └── README.md
 ```
 

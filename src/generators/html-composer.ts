@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config.js';
 import type { ContentSelectionResult, HTMLRegenerationFeedback, JobAnalysisResult, PDFMeasurement } from '../types.js';
-import { aiClient } from '../utils/ai-client.js';
 import { PDFGenerator } from './pdf.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +28,41 @@ export class HTMLComposer {
       throw new Error(`Template não encontrado: ${this.templatePath}`);
     }
     return fs.readFileSync(this.templatePath, 'utf-8');
+  }
+
+  /**
+   * Normaliza a seleção de conteúdo para tolerar campos ausentes no payload da IA
+   */
+  private normalizeContentSelection(contentSelection: ContentSelectionResult): ContentSelectionResult {
+    return {
+      ...contentSelection,
+      selectedExperiences: Array.isArray(contentSelection.selectedExperiences)
+        ? contentSelection.selectedExperiences.map((experience) => ({
+            companyId: experience.companyId,
+            priority: experience.priority,
+            achievementsToHighlight: Array.isArray(experience.achievementsToHighlight)
+              ? experience.achievementsToHighlight
+              : [],
+          }))
+        : [],
+      selectedSkills: {
+        categories: Array.isArray(contentSelection.selectedSkills?.categories)
+          ? contentSelection.selectedSkills!.categories.map((category) => ({
+              categoryId: category.categoryId,
+              categoryName: category.categoryName,
+              skills: Array.isArray(category.skills) ? category.skills : [],
+            }))
+          : [],
+      },
+      selectedCertifications: Array.isArray(contentSelection.selectedCertifications)
+        ? contentSelection.selectedCertifications.map((certification) => ({
+            index: certification.index,
+            text: certification.text,
+          }))
+        : [],
+      presentationText: contentSelection.presentationText || '',
+      keywordsUsed: Array.isArray(contentSelection.keywordsUsed) ? contentSelection.keywordsUsed : [],
+    };
   }
 
   /**
@@ -100,52 +134,190 @@ export class HTMLComposer {
   }
 
   /**
-   * Limpa HTML removendo código markdown ou explicações extras
+   * Seleciona os índices de conquistas que devem permanecer visíveis
    */
-  private cleanHTMLResponse(response: string): string {
-    // Remove markdown code blocks se houver
-    let html = response;
+  private pickAchievementIndices(totalAchievements: number, selectedIndices: number[] | undefined, priority: number): number[] {
+    const uniqueSelected = Array.from(new Set((selectedIndices || []).filter((index) => index >= 0 && index < totalAchievements)));
+    const minimum = Math.min(totalAchievements, priority <= 2 ? 3 : 2);
+    const targetCount = Math.max(uniqueSelected.length, minimum);
 
-    // Remove ```html ou ``` se houver no início/fim
-    html = html.replace(/^```html\s*/i, '');
-    html = html.replace(/^```\s*/i, '');
-    html = html.replace(/\s*```$/i, '');
+    if (uniqueSelected.length >= targetCount) {
+      return uniqueSelected.slice(0, targetCount).sort((a, b) => a - b);
+    }
 
-    // Tenta encontrar início do HTML de várias formas
-    let htmlStart = -1;
-    
-    // Tenta encontrar <!DOCTYPE html>
-    const doctypeIndex = html.indexOf('<!DOCTYPE html>');
-    if (doctypeIndex !== -1) {
-      htmlStart = doctypeIndex;
-    } else {
-      // Tenta encontrar <html (pode ter atributos)
-      const htmlTagIndex = html.indexOf('<html');
-      if (htmlTagIndex !== -1) {
-        htmlStart = htmlTagIndex;
+    const remaining = Array.from({ length: totalAchievements }, (_, index) => index)
+      .filter((index) => !uniqueSelected.includes(index));
+
+    const filled = [...uniqueSelected, ...remaining.slice(0, targetCount - uniqueSelected.length)];
+    return filled.sort((a, b) => a - b);
+  }
+
+  /**
+   * Aplica a seleção de conquistas em uma experiência específica
+   */
+  private applyExperienceSelection($: cheerio.CheerioAPI, $experience: any, selection: { priority: number; achievementsToHighlight: number[] }): void {
+    const $achievements = $experience.find('.achievement');
+    const totalAchievements = $achievements.length;
+
+    if (totalAchievements === 0) {
+      return;
+    }
+
+    const keepIndices = this.pickAchievementIndices(
+      totalAchievements,
+      selection.achievementsToHighlight,
+      selection.priority
+    );
+
+    $achievements.each((index: number, element: any) => {
+      if (!keepIndices.includes(index)) {
+        $(element).remove();
+      }
+    });
+  }
+
+  /**
+   * Aplica as seleções de skills ao template
+   */
+  private applySelectedSkills($: cheerio.CheerioAPI, contentSelection: ContentSelectionResult): void {
+    const selectedCategories = contentSelection.selectedSkills?.categories || [];
+    if (selectedCategories.length === 0) {
+      return;
+    }
+
+    const $skillsGrid = $('.skills-grid').first();
+    if ($skillsGrid.length === 0) {
+      return;
+    }
+
+    const $templateCategory = $skillsGrid.find('.skill-category').first();
+    const renderedCategories: any[] = [];
+
+    selectedCategories.forEach((category) => {
+      const $existingCategory = $skillsGrid
+        .find('.skill-category')
+        .filter((_, element) => $(element).attr('data-category') === category.categoryId)
+        .first();
+
+      const $category = ($existingCategory.length > 0 ? $existingCategory : $templateCategory).clone();
+      if ($category.length === 0) {
+        return;
+      }
+
+      $category.attr('data-category', category.categoryId);
+      $category.find('.skill-category-title').text(category.categoryName);
+      $category.find('.skill-list').text(category.skills.join(', '));
+      renderedCategories.push($category);
+    });
+
+    if (renderedCategories.length > 0) {
+      $skillsGrid.empty();
+      renderedCategories.forEach(($category) => {
+        $skillsGrid.append($category);
+      });
+    }
+  }
+
+  /**
+   * Aplica as certificações selecionadas ao template
+   */
+  private applySelectedCertifications($: cheerio.CheerioAPI, contentSelection: ContentSelectionResult): void {
+    const selectedCertifications = contentSelection.selectedCertifications || [];
+    if (selectedCertifications.length === 0) {
+      return;
+    }
+
+    const $certificationsList = $('.certifications-list').first();
+    if ($certificationsList.length === 0) {
+      return;
+    }
+
+    const originalCertifications = $certificationsList.find('.achievement').toArray();
+    const renderedCertifications: any[] = [];
+    const usedIndexes = new Set<number>();
+
+    for (const selection of selectedCertifications) {
+      let matchedIndex = -1;
+
+      if (typeof selection.index === 'number' && originalCertifications[selection.index]) {
+        matchedIndex = selection.index;
+      } else if (selection.text) {
+        const query = selection.text.toLowerCase();
+        matchedIndex = originalCertifications.findIndex((element, index) => {
+          if (usedIndexes.has(index)) {
+            return false;
+          }
+          const text = $(element).text().trim().toLowerCase();
+          return text.includes(query);
+        });
+      }
+
+      if (matchedIndex === -1 || usedIndexes.has(matchedIndex)) {
+        continue;
+      }
+
+      usedIndexes.add(matchedIndex);
+      renderedCertifications.push($(originalCertifications[matchedIndex]).clone());
+    }
+
+    if (renderedCertifications.length > 0) {
+      $certificationsList.empty();
+      renderedCertifications.forEach(($certification) => {
+        $certificationsList.append($certification);
+      });
+    }
+  }
+
+  /**
+   * Renderiza o template HTML com o conteúdo selecionado
+   */
+  private renderTemplateHtml(
+    templateHtml: string,
+    role: string,
+    contentSelection: ContentSelectionResult
+  ): string {
+    const normalized = this.normalizeContentSelection(contentSelection);
+    const $ = cheerio.load(templateHtml);
+
+    const name = $('.header h1').first().text().trim() || 'Currículo';
+
+    $('head title').text(`${name} - ${role}`);
+    $('.header .title').first().text(role);
+    $('.summary').first().text(normalized.presentationText || '');
+
+    const $experienceSection = $('.experience-item').first().closest('section');
+    if ($experienceSection.length > 0 && normalized.selectedExperiences.length > 0) {
+      const selectedExperiences = [...normalized.selectedExperiences].sort((a, b) => a.priority - b.priority);
+      const renderedExperiences: any[] = [];
+
+      selectedExperiences.forEach((selection) => {
+        const $experience = $experienceSection
+          .find('.experience-item')
+          .filter((_, element) => $(element).attr('data-company') === selection.companyId)
+          .first();
+
+        if ($experience.length === 0) {
+          return;
+        }
+
+        this.applyExperienceSelection($, $experience, selection);
+        renderedExperiences.push($experience.clone());
+      });
+
+      if (renderedExperiences.length > 0) {
+        $experienceSection.find('.experience-item').remove();
+        renderedExperiences.forEach(($experience) => {
+          $experienceSection.append($experience);
+        });
       }
     }
 
-    // Se encontrou início do HTML, remove tudo antes
-    if (htmlStart > 0) {
-      html = html.substring(htmlStart);
-    } else if (htmlStart === -1) {
-      // Se não encontrou início do HTML, pode ser que esteja em outro formato
-      // Tenta encontrar pelo menos uma tag HTML
-      const anyHtmlTag = html.match(/<[a-zA-Z]+[^>]*>/);
-      if (anyHtmlTag && anyHtmlTag.index !== undefined) {
-        htmlStart = anyHtmlTag.index;
-        html = html.substring(htmlStart);
-      }
-    }
+    this.applySelectedSkills($, normalized);
+    this.applySelectedCertifications($, normalized);
 
-    // Remove explicações após </html>
-    const htmlEndIndex = html.lastIndexOf('</html>');
-    if (htmlEndIndex !== -1) {
-      html = html.substring(0, htmlEndIndex + 7); // +7 para incluir </html>
-    }
-
-    return html.trim();
+    const serializedHtml = $.html();
+    const hasDoctype = /^<!DOCTYPE html>/i.test(templateHtml.trimStart());
+    return hasDoctype ? `<!DOCTYPE html>\n${serializedHtml}` : serializedHtml;
   }
 
   /**
@@ -154,52 +326,12 @@ export class HTMLComposer {
   async compose(
     role: string,
     contentSelection: ContentSelectionResult,
-    jobAnalysis?: JobAnalysisResult
+    _jobAnalysis?: JobAnalysisResult
   ): Promise<string> {
     try {
-      // Carrega template base
+      void _jobAnalysis;
       const templateHtml = this.loadTemplate();
-
-      // Prepara dados para o prompt
-      const contentSelectionFormatted = JSON.stringify(contentSelection, null, 2);
-      const jobAnalysisFormatted = jobAnalysis ? JSON.stringify(jobAnalysis, null, 2) : 'null';
-      const sectionPriorities = this.formatSectionPriorities();
-
-      // Chama IA para montar HTML
-      const rawResponse = await aiClient.call(
-        '03-montagem-html.md',
-        {
-          role: role,
-          contentSelection: contentSelectionFormatted,
-          jobAnalysis: jobAnalysisFormatted,
-          templateHtml: templateHtml,
-          sectionPriorities: sectionPriorities,
-        },
-        {
-          maxTokens: 8192, // Template grande + resposta HTML
-          temperature: 0.3, // Baixa temperatura para HTML consistente
-        }
-      );
-
-      // Valida se a resposta contém HTML válido antes de limpar
-      if (!rawResponse.includes('<!DOCTYPE html>') && !rawResponse.includes('<html')) {
-        const preview = rawResponse.substring(0, 1000).replace(/\n/g, '\\n');
-        throw new Error(
-          `A IA não retornou HTML válido. Resposta recebida (primeiros 1000 chars):\n${preview}${rawResponse.length > 1000 ? '...' : ''}\n\n` +
-          `A resposta deve conter um documento HTML completo começando com <!DOCTYPE html> ou <html>.`
-        );
-      }
-
-      // Limpa resposta (remove markdown, explicações extras)
-      const html = this.cleanHTMLResponse(rawResponse);
-
-      // Valida se ainda tem HTML após limpeza
-      if (!html || html.trim().length === 0) {
-        const preview = rawResponse.substring(0, 500).replace(/\n/g, '\\n');
-        throw new Error(
-          `Após limpar a resposta da IA, o HTML está vazio. Resposta original (primeiros 500 chars):\n${preview}${rawResponse.length > 500 ? '...' : ''}`
-        );
-      }
+      const html = this.renderTemplateHtml(templateHtml, role, this.normalizeContentSelection(contentSelection));
 
       // Valida estrutura básica
       const validation = this.validateHTML(html);
@@ -261,6 +393,7 @@ export class HTMLComposer {
     totalIncluded: number;
     totalExpected: number;
   } {
+    const normalized = this.normalizeContentSelection(contentSelection);
     const $ = cheerio.load(html);
     const includedAchievements = new Map<string, number[]>();
     const missingAchievements: Array<{ companyId: string; achievementIndices: number[] }> = [];
@@ -269,7 +402,7 @@ export class HTMLComposer {
     let totalExpected = 0;
 
     // Analisa cada experiência selecionada
-    for (const exp of contentSelection.selectedExperiences) {
+    for (const exp of normalized.selectedExperiences) {
       const expectedIndices = exp.achievementsToHighlight || [];
       totalExpected += expectedIndices.length;
 
@@ -315,79 +448,6 @@ export class HTMLComposer {
       totalIncluded,
       totalExpected,
     };
-  }
-
-  /**
-   * Formata as prioridades de seção para envio ao prompt de montagem HTML
-   */
-  private formatSectionPriorities(): string {
-    const { sections, instructions } = config.sectionPriorities;
-    
-    // Ordena seções por prioridade (da menor para a maior) para mostrar ordem de remoção
-    const sortedSections = [...sections].sort((a, b) => a.priority - b.priority);
-    
-    const prioritiesFormatted = sortedSections.map(s => 
-      `  - **${s.name}** (${s.id}): prioridade ${s.priority}`
-    ).join('\n');
-    
-    // Agrupa seções por faixa de prioridade para facilitar entendimento
-    const byPriority = {
-      priority1to3: sections.filter(s => s.priority >= 1 && s.priority <= 3),
-      priority4to6: sections.filter(s => s.priority >= 4 && s.priority <= 6),
-      priority7to9: sections.filter(s => s.priority >= 7 && s.priority <= 9),
-      priority10: sections.filter(s => s.priority === 10),
-    };
-    
-    return `
-## Prioridades de Seção para Redução de Conteúdo
-
-**IMPORTANTE**: Quando precisar reduzir conteúdo para caber em 2 páginas, siga esta ordem de prioridade:
-
-### Ordem de Remoção/Redução (da MENOR prioridade para a MAIOR):
-
-1. **PRIMEIRO** (Prioridade 1-3): Remova/reduza estas seções primeiro:
-${byPriority.priority1to3.map(s => `   - ${s.name} (${s.id}) - Prioridade ${s.priority}`).join('\n') || '   - Nenhuma seção nesta faixa'}
-
-2. **SEGUNDO** (Prioridade 4-6): Se ainda precisar reduzir, reduza conteúdo destas seções:
-${byPriority.priority4to6.map(s => `   - ${s.name} (${s.id}) - Prioridade ${s.priority}`).join('\n') || '   - Nenhuma seção nesta faixa'}
-
-3. **TERCEIRO** (Prioridade 7-9): Só reduza estas seções se absolutamente necessário:
-${byPriority.priority7to9.map(s => `   - ${s.name} (${s.id}) - Prioridade ${s.priority}`).join('\n') || '   - Nenhuma seção nesta faixa'}
-
-4. **NUNCA** (Prioridade 10): Estas seções NUNCA devem ser removidas ou reduzidas:
-${byPriority.priority10.map(s => `   - ${s.name} (${s.id}) - Prioridade ${s.priority}`).join('\n') || '   - Nenhuma seção nesta faixa'}
-
-### Instruções Detalhadas por Faixa de Prioridade:
-
-- **Prioridade 10**: ${instructions.priority10}
-- **Prioridade 7-9**: ${instructions.priority7to9}
-- **Prioridade 4-6**: ${instructions.priority4to6}
-- **Prioridade 1-3**: ${instructions.priority1to3}
-
-### Lista Completa de Prioridades (ordenada por prioridade crescente):
-
-${prioritiesFormatted}
-
-### Como Reduzir Conteúdo Dentro de Cada Seção:
-
-**Para Experiências Profissionais** (prioridade 9):
-- NUNCA remova uma experiência completa
-- Reduza APENAS conquistas, seguindo a prioridade da experiência (priority 5 → 4 → 3 → 2 → 1)
-- Mantenha sempre pelo menos 2-3 conquistas por experiência
-
-**Para Certificações** (prioridade 4):
-- Pode remover certificações menos relevantes primeiro
-- Mantenha pelo menos 2-3 certificações principais
-
-**Para Competências Técnicas** (prioridade 6):
-- Pode reduzir número de tecnologias por categoria
-- Priorize manter tecnologias mais relevantes para a vaga/role
-
-**Para Outras Seções**:
-- Reduza texto quando possível (resumir sem perder essência)
-- Remova itens menos relevantes primeiro
-- Mantenha pelo menos o essencial de cada seção
-`;
   }
 
   /**
@@ -493,7 +553,7 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
     attempt: number
   ): ContentSelectionResult {
     // Cria uma cópia profunda do contentSelection
-    const expanded = JSON.parse(JSON.stringify(contentSelection)) as ContentSelectionResult;
+    const expanded = this.normalizeContentSelection(contentSelection);
     
     // Carrega template para descobrir quantas conquistas existem por experiência
     const templateHtml = this.loadTemplate();
@@ -614,6 +674,10 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
         adjustedContentSelection = expandedContentSelection;
         console.log(chalk.blue('ℹ'), `Expandindo conteúdo programaticamente (tentativa ${attempt})`);
         console.log(chalk.blue('  →'), `Adicionando mais conquistas às experiências`);
+      } else if (feedback && feedback.adjustment === 'reduce' && attempt > 1) {
+        adjustedContentSelection = this.reduceContentSelection(adjustedContentSelection, attempt);
+        console.log(chalk.blue('ℹ'), `Reduzindo conteúdo programaticamente (tentativa ${attempt})`);
+        console.log(chalk.blue('  →'), `Removendo conquistas menos prioritárias`);
       }
 
       // Gera HTML (com ou sem feedback)
@@ -630,12 +694,7 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
         console.log(chalk.blue('  →'), adjustmentMessage);
         console.log(chalk.blue('  →'), `Objetivo: ${feedback.targetMinPages}-${feedback.targetMaxPages} páginas`);
         
-        currentHTML = await this.composeWithFeedback(
-          role,
-          adjustedContentSelection, // Usa versão ajustada
-          jobAnalysis,
-          feedback
-        );
+        currentHTML = await this.composeWithFeedback(role, adjustedContentSelection, jobAnalysis, feedback);
       }
 
       // Mede altura do PDF
@@ -708,83 +767,44 @@ AÇÕES NECESSÁRIAS (use as prioridades de seção para guiar):
   private async composeWithFeedback(
     role: string,
     contentSelection: ContentSelectionResult,
-    jobAnalysis: JobAnalysisResult | undefined,
-    feedback: HTMLRegenerationFeedback
+    _jobAnalysis: JobAnalysisResult | undefined,
+    _feedback: HTMLRegenerationFeedback
   ): Promise<string> {
     try {
-      // Carrega template base
-      const templateHtml = this.loadTemplate();
-
-      // Prepara dados para o prompt
-      const contentSelectionFormatted = JSON.stringify(contentSelection, null, 2);
-      const jobAnalysisFormatted = jobAnalysis ? JSON.stringify(jobAnalysis, null, 2) : 'null';
-      const feedbackFormatted = JSON.stringify(feedback, null, 2);
-      const sectionPriorities = this.formatSectionPriorities();
-
-      // Chama IA para montar HTML com feedback
-      const rawResponse = await aiClient.call(
-        '03-montagem-html.md',
-        {
-          role: role,
-          contentSelection: contentSelectionFormatted,
-          jobAnalysis: jobAnalysisFormatted,
-          templateHtml: templateHtml,
-          regenerationFeedback: feedbackFormatted,
-          sectionPriorities: sectionPriorities,
-        },
-        {
-          maxTokens: 8192,
-          temperature: 0.3,
-        }
-      );
-
-      // Valida se a resposta contém HTML válido antes de limpar
-      if (!rawResponse.includes('<!DOCTYPE html>') && !rawResponse.includes('<html')) {
-        const preview = rawResponse.substring(0, 1000).replace(/\n/g, '\\n');
-        throw new Error(
-          `A IA não retornou HTML válido. Resposta recebida (primeiros 1000 chars):\n${preview}${rawResponse.length > 1000 ? '...' : ''}\n\n` +
-          `A resposta deve conter um documento HTML completo começando com <!DOCTYPE html> ou <html>.`
-        );
-      }
-
-      // Limpa resposta
-      const html = this.cleanHTMLResponse(rawResponse);
-
-      // Valida se ainda tem HTML após limpeza
-      if (!html || html.trim().length === 0) {
-        const preview = rawResponse.substring(0, 500).replace(/\n/g, '\\n');
-        throw new Error(
-          `Após limpar a resposta da IA, o HTML está vazio. Resposta original (primeiros 500 chars):\n${preview}${rawResponse.length > 500 ? '...' : ''}`
-        );
-      }
-
-      // Valida estrutura básica
-      const validation = this.validateHTML(html);
-      
-      // Erros críticos fazem o código falhar
-      if (validation.criticalErrors.length > 0) {
-        const errorMessage = validation.criticalErrors.join('\n  - ');
-        const htmlPreview = html.substring(0, 500).replace(/\n/g, '\\n');
-        throw new Error(
-          `HTML gerado não contém seções obrigatórias:\n  - ${errorMessage}\n\n` +
-          `HTML gerado (primeiros 500 chars):\n${htmlPreview}${html.length > 500 ? '...' : ''}\n\n` +
-          `Tamanho do HTML: ${html.length} caracteres`
-        );
-      }
-      
-      // Avisos não críticos apenas são exibidos
-      if (validation.warnings.length > 0) {
-        console.warn('Avisos de validação do HTML gerado (não críticos):');
-        validation.warnings.forEach((warning) => {
-          console.warn(`  - ${warning}`);
-        });
-      }
-
-      return html;
+      void _jobAnalysis;
+      void _feedback;
+      return await this.compose(role, contentSelection, _jobAnalysis);
     } catch (error) {
       throw new Error(
         `Erro ao compor HTML com feedback: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
       );
     }
+  }
+
+  /**
+   * Reduz programaticamente a seleção de conteúdo para tentar diminuir o PDF
+   */
+  private reduceContentSelection(
+    contentSelection: ContentSelectionResult,
+    attempt: number
+  ): ContentSelectionResult {
+    const reduced = this.normalizeContentSelection(contentSelection);
+    const achievementsToRemove = attempt === 2 ? 1 : attempt === 3 ? 2 : 3;
+
+    const sortedExperiences = [...reduced.selectedExperiences].sort((a, b) => b.priority - a.priority);
+
+    sortedExperiences.forEach((exp) => {
+      const minimumToKeep = exp.priority <= 2 ? 3 : 2;
+      const currentCount = exp.achievementsToHighlight.length;
+
+      if (currentCount <= minimumToKeep) {
+        return;
+      }
+
+      const targetCount = Math.max(minimumToKeep, currentCount - achievementsToRemove);
+      exp.achievementsToHighlight = exp.achievementsToHighlight.slice(0, targetCount);
+    });
+
+    return reduced;
   }
 }

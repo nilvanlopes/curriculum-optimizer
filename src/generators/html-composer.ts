@@ -2,13 +2,9 @@ import chalk from 'chalk';
 import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { config } from '../config.js';
 import type { ContentSelectionResult, HTMLRegenerationFeedback, JobAnalysisResult, PDFMeasurement } from '../types.js';
 import { PDFGenerator } from './pdf.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Compositor de HTML que monta currículo completo usando IA
@@ -17,7 +13,7 @@ export class HTMLComposer {
   private templatePath: string;
 
   constructor(templatePath?: string) {
-    this.templatePath = templatePath || path.join(__dirname, '../templates/base-curriculum.html');
+    this.templatePath = templatePath || path.join(process.cwd(), 'input/base-curriculum.html');
   }
 
   /**

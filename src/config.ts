@@ -168,9 +168,9 @@ export const config = {
      */
     instructions: {
       priority10: 'NUNCA remover ou reduzir. Conteúdo essencial.',
-      priority7to9: 'Manter completo. Só reduzir se absolutamente necessário para caber em 3 páginas.',
+      priority7to9: 'Manter completo. Só reduzir se absolutamente necessário para respeitar o alvo de 1,9 a 2,2 páginas.',
       priority4to6: 'Pode ter conteúdo reduzido (menos itens, texto mais curto) se necessário.',
-      priority1to3: 'Pode ser completamente removido se necessário para caber em 3 páginas.',
+      priority1to3: 'Pode ser completamente removido se necessário para respeitar o alvo de 1,9 a 2,2 páginas.',
     },
   },
 

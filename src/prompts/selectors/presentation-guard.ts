@@ -73,11 +73,41 @@ function normalizeText(value: string): string {
     .trim();
 }
 
+function arrayOfStrings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+export function normalizeJobAnalysis(jobAnalysis?: JobAnalysisResult): JobAnalysisResult | undefined {
+  if (!jobAnalysis) {
+    return undefined;
+  }
+
+  return {
+    ...jobAnalysis,
+    keywords: arrayOfStrings(jobAnalysis.keywords),
+    requirements: {
+      mandatory: arrayOfStrings(jobAnalysis.requirements?.mandatory),
+      desirable: arrayOfStrings(jobAnalysis.requirements?.desirable),
+    },
+    gaps: Array.isArray(jobAnalysis.gaps)
+      ? jobAnalysis.gaps.filter((gap) => gap && typeof gap.keyword === 'string')
+      : [],
+    highlights: {
+      mainResponsibilities: arrayOfStrings(jobAnalysis.highlights?.mainResponsibilities),
+      differentiators: arrayOfStrings(jobAnalysis.highlights?.differentiators),
+    },
+    suggestions: arrayOfStrings(jobAnalysis.suggestions),
+    matchScoreJustification:
+      typeof jobAnalysis.matchScoreJustification === 'string' ? jobAnalysis.matchScoreJustification : '',
+  };
+}
+
 function buildAllowedFacts(
   source: PresentationSourceFacts,
   role?: string,
   jobAnalysis?: JobAnalysisResult
 ): string {
+  const normalizedJobAnalysis = normalizeJobAnalysis(jobAnalysis);
   const parts = [
     source.name,
     source.title,
@@ -86,16 +116,16 @@ function buildAllowedFacts(
     role || '',
   ];
 
-  if (jobAnalysis) {
+  if (normalizedJobAnalysis) {
     parts.push(
-      jobAnalysis.keywords.join(' '),
-      jobAnalysis.requirements.mandatory.join(' '),
-      jobAnalysis.requirements.desirable.join(' '),
-      jobAnalysis.gaps.map((gap) => gap.keyword).join(' '),
-      jobAnalysis.highlights.mainResponsibilities.join(' '),
-      jobAnalysis.highlights.differentiators.join(' '),
-      jobAnalysis.suggestions.join(' '),
-      jobAnalysis.matchScoreJustification
+      normalizedJobAnalysis.keywords.join(' '),
+      normalizedJobAnalysis.requirements.mandatory.join(' '),
+      normalizedJobAnalysis.requirements.desirable.join(' '),
+      normalizedJobAnalysis.gaps.map((gap) => gap.keyword).join(' '),
+      normalizedJobAnalysis.highlights.mainResponsibilities.join(' '),
+      normalizedJobAnalysis.highlights.differentiators.join(' '),
+      normalizedJobAnalysis.suggestions.join(' '),
+      normalizedJobAnalysis.matchScoreJustification
     );
   }
 
@@ -181,6 +211,7 @@ export function buildFallbackPresentation(
   role?: string,
   jobAnalysis?: JobAnalysisResult
 ): string {
+  const normalizedJobAnalysis = normalizeJobAnalysis(jobAnalysis);
   const facts = source.profileText
     .split('\n')
     .map((line) => line.trim())
@@ -213,8 +244,8 @@ export function buildFallbackPresentation(
     parts.push(selectedFacts.join(' | '));
   }
 
-  if (jobAnalysis && jobAnalysis.keywords.length > 0) {
-    parts.push(`Keywords relevantes: ${jobAnalysis.keywords.slice(0, 4).join(', ')}`);
+  if (normalizedJobAnalysis && normalizedJobAnalysis.keywords.length > 0) {
+    parts.push(`Keywords relevantes: ${normalizedJobAnalysis.keywords.slice(0, 4).join(', ')}`);
   }
 
   let fallback = parts.join(' • ').replace(/\s+/g, ' ').trim();
@@ -234,6 +265,7 @@ export function buildValidationFeedback(
   role?: string,
   jobAnalysis?: JobAnalysisResult
 ): string {
+  const normalizedJobAnalysis = normalizeJobAnalysis(jobAnalysis);
   const allowedPreview = source.profileText
     .split('\n')
     .map((line) => line.trim())
@@ -241,8 +273,8 @@ export function buildValidationFeedback(
     .slice(0, 10)
     .join('\n- ');
 
-  const keywordPreview = jobAnalysis?.keywords.length
-    ? `\n- Job keywords: ${jobAnalysis.keywords.slice(0, 6).join(', ')}`
+  const keywordPreview = normalizedJobAnalysis?.keywords.length
+    ? `\n- Job keywords: ${normalizedJobAnalysis.keywords.slice(0, 6).join(', ')}`
     : '';
 
   return [

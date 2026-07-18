@@ -1,28 +1,27 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { config } from '../../config.js';
 import type { ContentSelectionResult, JobAnalysisResult } from '../../types.js';
-import { aiClient } from '../../utils/ai-client.js';
+import { AIClient } from '../../utils/ai-client.js';
 import { ProfileExtractor } from '../../utils/profile-extractor.js';
 import {
   buildFallbackPresentation,
   buildValidationFeedback,
+  normalizeJobAnalysis,
   validatePresentationText,
   type PresentationSourceFacts,
 } from './presentation-guard.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Seletor de conteúdo e gerador de apresentação para otimização de currículo
  */
 export class ContentSelector {
   private templatePath: string;
+  private aiClient: AIClient;
 
-  constructor(templatePath?: string) {
-    this.templatePath = templatePath || path.join(__dirname, '../../templates/base-curriculum.html');
+  constructor(templatePath?: string, aiClient?: AIClient) {
+    this.templatePath = templatePath || path.join(process.cwd(), 'input/base-curriculum.html');
+    this.aiClient = aiClient || new AIClient();
   }
 
   /**
@@ -100,6 +99,7 @@ ${prioritiesFormatted}
     jobAnalysis?: JobAnalysisResult,
     validationFeedback = ''
   ): string {
+    const normalizedJobAnalysis = normalizeJobAnalysis(jobAnalysis);
     const allowedFacts = source.profileText
       .split('\n')
       .map((line) => line.trim())
@@ -107,8 +107,8 @@ ${prioritiesFormatted}
       .slice(0, 12)
       .join('\n- ');
 
-    const keywordsPreview = jobAnalysis?.keywords.length
-      ? `\n- Keywords da vaga: ${jobAnalysis.keywords.slice(0, 8).join(', ')}`
+    const keywordsPreview = normalizedJobAnalysis?.keywords.length
+      ? `\n- Keywords da vaga: ${normalizedJobAnalysis.keywords.slice(0, 8).join(', ')}`
       : '';
 
     return [
@@ -137,7 +137,7 @@ ${prioritiesFormatted}
     validationFeedback = ''
   ): Promise<ContentSelectionResult> {
     try {
-      const refinement = await aiClient.callJSON<{
+      const refinement = await this.aiClient.callJSON<{
         presentationText: string;
         keywordsUsed?: string[];
       }>(
@@ -158,6 +158,7 @@ ${prioritiesFormatted}
         {
           maxTokens: 2048,
           temperature: 0.25,
+          step: 'presentation-refinement',
         }
       );
 
@@ -200,7 +201,7 @@ ${prioritiesFormatted}
       validationFeedback
     );
 
-    const result = await aiClient.callJSON<ContentSelectionResult>(
+    const result = await this.aiClient.callJSON<ContentSelectionResult>(
       '02-selecao-conteudo-e-apresentacao.md',
       {
         jobAnalysis: analysisFormatted,
@@ -214,6 +215,8 @@ ${prioritiesFormatted}
       {
         maxTokens: 8192,
         temperature: 0.4,
+        step: validationFeedback ? 'content-selection-correction' : 'content-selection',
+        attempt: validationFeedback ? 2 : 1,
       }
     );
 
@@ -328,12 +331,13 @@ ${prioritiesFormatted}
         } catch (retryError) {
           const profileData = this.extractProfileData();
           const fallbackPresentation = buildFallbackPresentation(profileData, role, jobAnalysis);
+          const normalizedJobAnalysis = normalizeJobAnalysis(jobAnalysis);
           return {
             selectedExperiences: [],
             selectedSkills: { categories: [] },
             selectedCertifications: [],
             presentationText: fallbackPresentation,
-            keywordsUsed: jobAnalysis.keywords.slice(0, 6),
+            keywordsUsed: normalizedJobAnalysis?.keywords.slice(0, 6) || [],
           };
         }
       }

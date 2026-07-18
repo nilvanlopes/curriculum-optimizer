@@ -16,13 +16,14 @@ services:
     tmpfs:
       - /tmp:rw,nosuid,size=512m
     volumes:
-      - ./input:/app/input:ro
+      - ./input:/app/input:rw
       - ./output:/app/output:rw
       - ./data:/app/data:rw
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      AI_PROVIDER: ${AI_PROVIDER:-openrouter}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      CURRICULUM_FILE: ${CURRICULUM_FILE:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-nvidia/nemotron-3-super-120b-a12b:free}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
@@ -32,7 +33,15 @@ services:
       LMSTUDIO_MODEL: ${LMSTUDIO_MODEL:-}
       LMSTUDIO_API_KEY: ${LMSTUDIO_API_KEY:-lm-studio}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_MODEL: ${GOOGLE_MODEL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama}
       PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
       PUPPETEER_SKIP_DOWNLOAD: "true"

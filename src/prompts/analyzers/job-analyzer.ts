@@ -1,22 +1,20 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import type { JobAnalysisResult } from '../../types.js';
-import { aiClient } from '../../utils/ai-client.js';
+import { AIClient } from '../../utils/ai-client.js';
 import { ProfileExtractor } from '../../utils/profile-extractor.js';
 import { storage } from '../../utils/storage.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Analisador de vagas usando IA
  */
 export class JobAnalyzer {
   private templatePath: string;
+  private aiClient: AIClient;
 
-  constructor(templatePath?: string) {
-    this.templatePath = templatePath || path.join(__dirname, '../../templates/base-curriculum.html');
+  constructor(templatePath?: string, aiClient?: AIClient) {
+    this.templatePath = templatePath || path.join(process.cwd(), 'input/base-curriculum.html');
+    this.aiClient = aiClient || new AIClient();
   }
 
   /**
@@ -45,7 +43,7 @@ export class JobAnalyzer {
     }
 
     try {
-      const result = await aiClient.callJSON<JobAnalysisResult>(
+      const result = await this.aiClient.callJSON<JobAnalysisResult>(
         '01-analise-vaga.md',
         {
           jobDescription: jobDescription.trim(),
@@ -54,6 +52,7 @@ export class JobAnalyzer {
         {
           maxTokens: 4096,
           temperature: 0.3, // Menor temperatura para respostas mais consistentes
+          step: 'job-analysis',
         }
       );
 

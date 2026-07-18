@@ -1,42 +1,45 @@
 import OpenAI from 'openai';
-import type { IAProvider } from './interface.js';
+import { safeEndpoint } from './endpoint.js';
+import type { AICallOptions, IAProvider } from './interface.js';
 
 export class LMStudioProvider implements IAProvider {
   private client: OpenAI;
-  private model: string;
+  readonly provider = 'lmstudio' as const;
+  readonly model: string;
+  readonly endpoint: string;
 
   constructor() {
-    this.model = process.env.LMSTUDIO_MODEL || '';
-    if (!this.model) {
+    const model = process.env.LMSTUDIO_MODEL?.trim();
+    const baseURL = process.env.LMSTUDIO_BASE_URL?.trim();
+    if (!model) {
       throw new Error('LMSTUDIO_MODEL não encontrado. Use o identificador exibido por GET /v1/models.');
     }
+    if (!baseURL) {
+      throw new Error('LMSTUDIO_BASE_URL não encontrado.');
+    }
 
+    this.model = model;
+    this.endpoint = safeEndpoint(baseURL);
     this.client = new OpenAI({
       apiKey: process.env.LMSTUDIO_API_KEY || 'lm-studio',
-      baseURL: process.env.LMSTUDIO_BASE_URL || 'http://host.docker.internal:1234/v1',
+      baseURL,
     });
   }
 
-  async call(
-    prompt: string,
-    options?: {
-      maxTokens?: number;
-      temperature?: number;
-      enableWebSearch?: boolean;
-      jsonResponse?: boolean;
-    }
-  ): Promise<string> {
+  async call(prompt: string, options?: AICallOptions): Promise<string> {
     const response = await this.client.chat.completions.create({
       model: this.model,
       max_tokens: options?.maxTokens || 4096,
       temperature: options?.temperature ?? 0.4,
-      ...(options?.jsonResponse ? { response_format: { type: 'json_object' as const } } : {}),
+      ...(options?.mode === 'json'
+        ? { response_format: { type: 'json_object' as const } }
+        : {}),
       messages: [
         {
           role: 'system',
-          content: options?.jsonResponse
+          content: options?.mode === 'json'
             ? 'Retorne somente um objeto JSON válido, sem raciocínio, comentários ou markdown. Não invente dados.'
-            : 'Você é especialista em currículos ATS. Siga exatamente o formato solicitado e não invente dados.',
+            : 'Siga exatamente o formato solicitado e não invente dados do candidato.',
         },
         { role: 'user', content: prompt },
       ],

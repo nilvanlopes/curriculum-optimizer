@@ -1,154 +1,178 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createAIProvider, type IAProvider } from './ai-providers/index.js';
+import { Logger } from './logger.js';
+import {
+  createAIProvider,
+  type AICallOptions,
+  type AIResponseMode,
+  type IAProvider,
+} from './ai-providers/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Cliente para interação com APIs de IA
- * Suporta múltiplos providers: Claude (Anthropic), ChatGPT (OpenAI) e Gemini (Google)
- */
-export class AIClient {
-  private provider: IAProvider;
+export interface AIClientCallOptions extends Omit<AICallOptions, 'mode'> {
+  mode?: AIResponseMode;
+  step?: string;
+  attempt?: number;
+}
 
-  constructor() {
-    this.provider = createAIProvider();
+export interface AIClientOptions {
+  provider?: IAProvider;
+  providerOverride?: string;
+  logger?: Logger;
+  promptsDir?: string;
+}
+
+/** Um cliente por execução, compartilhado entre todas as etapas do fluxo. */
+export class AIClient {
+  private readonly providerAdapter: IAProvider;
+  private readonly logger: Logger;
+  private readonly promptsDir: string;
+
+  constructor(options: AIClientOptions = {}) {
+    this.providerAdapter = options.provider || createAIProvider(options.providerOverride);
+    this.logger = options.logger || new Logger(false);
+    this.promptsDir = options.promptsDir || path.join(__dirname, '../../prompts');
   }
 
-  /**
-   * Carrega um prompt de um arquivo .md
-   */
-  async loadPrompt(promptFileName: string): Promise<string> {
-    const promptsDir = path.join(__dirname, '../../prompts');
-    const promptPath = path.join(promptsDir, promptFileName);
+  get provider(): IAProvider {
+    return this.providerAdapter;
+  }
 
+  async loadPrompt(promptFileName: string): Promise<string> {
+    const promptPath = path.join(this.promptsDir, promptFileName);
     if (!fs.existsSync(promptPath)) {
       throw new Error(`Prompt não encontrado: ${promptPath}`);
     }
-
     return fs.readFileSync(promptPath, 'utf-8');
   }
 
-  /**
-   * Substitui placeholders no prompt com valores reais
-   */
-  private replacePlaceholders(
-    prompt: string,
-    placeholders: Record<string, string>
-  ): string {
-    let result = prompt;
-    
-    for (const [key, value] of Object.entries(placeholders)) {
-      const regex = new RegExp(`\\{${key}\\}`, 'g');
-      result = result.replace(regex, value);
-    }
-
-    return result;
+  private replacePlaceholders(prompt: string, placeholders: Record<string, string>): string {
+    return prompt.replace(/\{([A-Za-z][A-Za-z0-9_]*)\}/g, (match, key: string) =>
+      Object.prototype.hasOwnProperty.call(placeholders, key) ? placeholders[key] : match
+    );
   }
 
-  /**
-   * Envia mensagem para API de IA e retorna resposta
-   */
   async call(
     promptFileName: string,
     placeholders: Record<string, string>,
-    options?: {
-      maxTokens?: number;
-      temperature?: number;
-      enableWebSearch?: boolean;
-      jsonResponse?: boolean;
-    }
+    options: AIClientCallOptions = {}
   ): Promise<string> {
-    try {
-      // Carrega e prepara o prompt
-      let prompt = await this.loadPrompt(promptFileName);
-      prompt = this.replacePlaceholders(prompt, placeholders);
+    const mode = options.mode || 'text';
+    const attempt = options.attempt || 1;
+    const step = options.step || promptFileName;
+    const startedAt = Date.now();
 
-      // Chama a API através do provider
-      return await this.provider.call(prompt, {
-        maxTokens: options?.maxTokens,
-        temperature: options?.temperature,
-        enableWebSearch: options?.enableWebSearch,
-        jsonResponse: options?.jsonResponse,
+    try {
+      const template = await this.loadPrompt(promptFileName);
+      const prompt = this.replacePlaceholders(template, placeholders);
+      const response = await this.providerAdapter.call(prompt, {
+        maxTokens: options.maxTokens,
+        temperature: options.temperature,
+        enableWebSearch: options.enableWebSearch,
+        mode,
       });
+      this.logCall(step, mode, attempt, Date.now() - startedAt, 'success');
+      return response;
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Erro ao chamar API de IA: ${error.message}`);
-      }
-      throw error;
+      const message = redactSecrets(error instanceof Error ? error.message : String(error));
+      this.logCall(step, mode, attempt, Date.now() - startedAt, 'error', message);
+      throw new Error(`Erro na etapa de IA ${step}: ${message}`);
     }
   }
 
-  /**
-   * Envia mensagem e retorna resposta parseada como JSON
-   */
+  async callText(
+    promptFileName: string,
+    placeholders: Record<string, string>,
+    options: Omit<AIClientCallOptions, 'mode'> = {}
+  ): Promise<string> {
+    return this.call(promptFileName, placeholders, { ...options, mode: 'text' });
+  }
+
   async callJSON<T>(
     promptFileName: string,
     placeholders: Record<string, string>,
-    options?: {
-      maxTokens?: number;
-      temperature?: number;
-      enableWebSearch?: boolean;
-    }
+    options: Omit<AIClientCallOptions, 'mode'> = {}
   ): Promise<T> {
-    const response = await this.call(promptFileName, placeholders, {
-      ...options,
-      jsonResponse: true,
-    });
+    const response = await this.call(promptFileName, placeholders, { ...options, mode: 'json' });
+    return parseJSONResponse<T>(response);
+  }
 
-    // Tenta extrair JSON da resposta (pode ter markdown ou texto antes/depois)
-    // Primeiro, tenta extrair de code blocks markdown
-    let jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    
-    // Se não encontrou em code block, tenta encontrar qualquer JSON
-    if (!jsonMatch) {
-      jsonMatch = response.match(/\{[\s\S]*\}/);
-    } else {
-      // Se encontrou em code block, usa apenas o conteúdo
-      jsonMatch = [jsonMatch[0], jsonMatch[1]];
+  private logCall(
+    step: string,
+    mode: AIResponseMode,
+    attempt: number,
+    durationMs: number,
+    status: 'success' | 'error',
+    errorMessage?: string
+  ): void {
+    const fields = [
+      `step=${JSON.stringify(step)}`,
+      `provider=${this.providerAdapter.provider}`,
+      `model=${JSON.stringify(this.providerAdapter.model)}`,
+      `endpoint=${JSON.stringify(this.providerAdapter.endpoint)}`,
+      `mode=${mode}`,
+      `attempt=${attempt}`,
+      `duration_ms=${durationMs}`,
+      `status=${status}`,
+    ];
+    if (errorMessage) {
+      fields.push(`error=${JSON.stringify(errorMessage)}`);
     }
-    
-    if (!jsonMatch || !jsonMatch[0]) {
-      // Mostra parte da resposta para debug
-      const preview = response.substring(0, 500).replace(/\n/g, '\\n');
-      const responseLength = response.length;
-      
-      throw new Error(
-        `Resposta não contém JSON válido.\n` +
-        `Resposta recebida (primeiros 500 chars de ${responseLength}):\n${preview}${responseLength > 500 ? '...' : ''}`
-      );
-    }
-
-    try {
-      const jsonString = jsonMatch[1] || jsonMatch[0];
-      return JSON.parse(jsonString) as T;
-    } catch (error) {
-      // Mostra parte da resposta que tentou fazer parse
-      const jsonPreview = jsonMatch[0].substring(0, 500).replace(/\n/g, '\\n');
-      const jsonLength = jsonMatch[0].length;
-      
-      throw new Error(
-        `Erro ao fazer parse do JSON: ${error instanceof Error ? error.message : error}\n` +
-        `JSON encontrado (primeiros 500 chars de ${jsonLength}):\n${jsonPreview}${jsonLength > 500 ? '...' : ''}`
-      );
-    }
+    this.logger.info(`[ai-call] ${fields.join(' ')}`);
   }
 }
 
-// Instância singleton com lazy initialization
-let aiClientInstance: AIClient | null = null;
+export function parseJSONResponse<T>(response: string): T {
+  const trimmed = response.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  const candidate = (fenced?.[1] || trimmed).trim();
 
-export const aiClient = new Proxy({} as AIClient, {
-  get(_target, prop) {
-    if (!aiClientInstance) {
-      aiClientInstance = new AIClient();
+  const direct = tryParseJSON<T>(candidate);
+  if (direct.ok) {
+    return direct.value;
+  }
+
+  const objectStart = candidate.indexOf('{');
+  const arrayStart = candidate.indexOf('[');
+  const starts = [objectStart, arrayStart].filter((index) => index >= 0);
+  const start = starts.length > 0 ? Math.min(...starts) : -1;
+  if (start < 0) {
+    throw new Error(`Resposta não contém JSON válido (${response.length} caracteres).`);
+  }
+
+  const closing = candidate[start] === '{' ? '}' : ']';
+  const end = candidate.lastIndexOf(closing);
+  if (end <= start) {
+    throw new Error(`Resposta JSON incompleta (${response.length} caracteres).`);
+  }
+
+  const extracted = tryParseJSON<T>(candidate.slice(start, end + 1));
+  if (!extracted.ok) {
+    throw new Error(`Resposta contém JSON inválido (${response.length} caracteres): ${extracted.error}`);
+  }
+  return extracted.value;
+}
+
+function tryParseJSON<T>(value: string):
+  | { ok: true; value: T }
+  | { ok: false; error: string } {
+  try {
+    return { ok: true, value: JSON.parse(value) as T };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function redactSecrets(message: string): string {
+  let redacted = message;
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!value || value.length < 6 || !/(?:KEY|TOKEN|SECRET|PASSWORD)/i.test(name)) {
+      continue;
     }
-    const value = aiClientInstance[prop as keyof AIClient];
-    if (typeof value === 'function') {
-      return value.bind(aiClientInstance);
-    }
-    return value;
-  },
-});
+    redacted = redacted.split(value).join('[redacted]');
+  }
+  return redacted.replace(/(?:sk|key)-[A-Za-z0-9._-]{8,}/g, '[redacted]');
+}

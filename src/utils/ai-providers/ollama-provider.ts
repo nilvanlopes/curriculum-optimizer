@@ -2,33 +2,36 @@ import OpenAI from 'openai';
 import { safeEndpoint } from './endpoint.js';
 import type { AICallOptions, IAProvider } from './interface.js';
 
-export class OpenAIProvider implements IAProvider {
+/** Adapter para a API OpenAI-compatible exposta pelo Ollama. */
+export class OllamaProvider implements IAProvider {
   private client: OpenAI;
-  readonly provider = 'openai' as const;
+  readonly provider = 'ollama' as const;
   readonly model: string;
   readonly endpoint: string;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
-    const model = process.env.OPENAI_MODEL?.trim();
-    const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY não encontrada.');
+    const baseURL = process.env.OLLAMA_BASE_URL?.trim();
+    const model = process.env.OLLAMA_MODEL?.trim();
+    if (!baseURL) {
+      throw new Error('OLLAMA_BASE_URL não encontrado.');
     }
     if (!model) {
-      throw new Error('OPENAI_MODEL não encontrado.');
+      throw new Error('OLLAMA_MODEL não encontrado.');
     }
 
     this.model = model;
     this.endpoint = safeEndpoint(baseURL);
-    this.client = new OpenAI({ apiKey, baseURL });
+    this.client = new OpenAI({
+      apiKey: process.env.OLLAMA_API_KEY || 'ollama',
+      baseURL,
+    });
   }
 
   async call(prompt: string, options?: AICallOptions): Promise<string> {
     const response = await this.client.chat.completions.create({
       model: this.model,
       max_tokens: options?.maxTokens || 4096,
-      temperature: options?.temperature ?? 0.7,
+      temperature: options?.temperature ?? 0.4,
       ...(options?.mode === 'json'
         ? { response_format: { type: 'json_object' as const } }
         : {}),
@@ -36,8 +39,8 @@ export class OpenAIProvider implements IAProvider {
         {
           role: 'system',
           content: options?.mode === 'json'
-            ? 'Return only one valid JSON object, without reasoning, comments, or markdown. Never invent candidate facts.'
-            : 'Follow the requested text or HTML format exactly. Never invent candidate facts.',
+            ? 'Retorne somente um objeto JSON válido, sem raciocínio, comentários ou markdown. Não invente dados.'
+            : 'Siga exatamente o formato solicitado e não invente dados do candidato.',
         },
         { role: 'user', content: prompt },
       ],
@@ -46,10 +49,10 @@ export class OpenAIProvider implements IAProvider {
     const choice = response.choices[0];
     const content = choice?.message?.content;
     if (!content) {
-      throw new Error('OpenAI retornou resposta vazia.');
+      throw new Error('Ollama retornou resposta vazia.');
     }
     if (choice.finish_reason === 'length') {
-      throw new Error('OpenAI interrompeu a resposta por limite de tokens.');
+      throw new Error('Ollama interrompeu a resposta por limite de tokens.');
     }
     return content;
   }

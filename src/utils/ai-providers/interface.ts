@@ -1,23 +1,27 @@
-/**
- * Interface para providers de IA
- * Abstrai as diferenças entre diferentes APIs de IA
- */
-export interface IAProvider {
-  /**
-   * Envia um prompt para a IA e retorna a resposta como texto
-   */
-  call(
-    prompt: string,
-    options?: {
-      maxTokens?: number;
-      temperature?: number;
-      enableWebSearch?: boolean;
-      jsonResponse?: boolean;
-    }
-  ): Promise<string>;
+export type AIProviderType =
+  | 'openrouter'
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'lmstudio'
+  | 'ollama';
+
+export type AIProviderInput = AIProviderType | 'claude';
+export type AIResponseMode = 'text' | 'json';
+
+export interface AICallOptions {
+  maxTokens?: number;
+  temperature?: number;
+  enableWebSearch?: boolean;
+  mode?: AIResponseMode;
 }
 
-/**
- * Tipo de provider suportado
- */
-export type AIProviderType = 'claude' | 'openai' | 'gemini' | 'openrouter' | 'lmstudio';
+/** Contrato uniforme exposto por todos os adapters de IA. */
+export interface IAProvider {
+  readonly provider: AIProviderType;
+  readonly model: string;
+  /** Endpoint sanitizado, próprio para logs (nunca contém credenciais ou query string). */
+  readonly endpoint: string;
+
+  call(prompt: string, options?: AICallOptions): Promise<string>;
+}

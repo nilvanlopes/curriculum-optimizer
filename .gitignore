@@ -12,6 +12,12 @@ dist/
 # Output e custom files
 src/templates/*.html
 src/templates/metadata.json
+!src/templates/curriculum-layout.html
+
+# Cache intermediário gerado a partir do currículo original
+input/original-curriculum.*
+input/base-curriculum.html
+input/base-curriculum.meta.json
 
 
 output/*.html

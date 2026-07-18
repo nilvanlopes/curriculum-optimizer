@@ -78,11 +78,14 @@ export class DatabaseManager {
         file_path_html TEXT,
         file_path_pdf TEXT,
         file_path_markdown TEXT,
+        file_path_txt TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL,
         FOREIGN KEY (job_analysis_id) REFERENCES job_analyses(id) ON DELETE SET NULL
       )
     `);
+
+    this.ensureColumn('generated_cvs', 'file_path_txt', 'TEXT');
 
     // Tabela de aplicações
     this.db.exec(`
@@ -109,6 +112,14 @@ export class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_applications_job_id ON applications(job_id);
       CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
     `);
+  }
+
+  /** Migração aditiva para bancos criados por versões anteriores. */
+  private ensureColumn(table: string, column: string, definition: string): void {
+    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (!columns.some((item) => item.name === column)) {
+      this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
   }
 
   /**
@@ -174,13 +185,14 @@ export class DatabaseManager {
     filePathHtml: string | null;
     filePathPdf: string | null;
     filePathMarkdown: string | null;
+    filePathTxt: string | null;
   }): number {
     const stmt = this.db.prepare(`
       INSERT INTO generated_cvs (
         job_id, job_analysis_id, template, output_name, formats,
-        match_score, file_path_html, file_path_pdf, file_path_markdown
+        match_score, file_path_html, file_path_pdf, file_path_markdown, file_path_txt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const result = stmt.run(
@@ -192,7 +204,8 @@ export class DatabaseManager {
       data.matchScore,
       data.filePathHtml,
       data.filePathPdf,
-      data.filePathMarkdown
+      data.filePathMarkdown,
+      data.filePathTxt
     );
     
     return result.lastInsertRowid as number;

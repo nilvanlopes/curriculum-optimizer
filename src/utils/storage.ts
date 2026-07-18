@@ -65,6 +65,7 @@ export class StorageManager {
     filePathHtml?: string;
     filePathPdf?: string;
     filePathMarkdown?: string;
+    filePathTxt?: string;
   }): number {
     return this.db.saveGeneratedCV({
       jobId: data.jobId || null,
@@ -76,6 +77,7 @@ export class StorageManager {
       filePathHtml: data.filePathHtml || null,
       filePathPdf: data.filePathPdf || null,
       filePathMarkdown: data.filePathMarkdown || null,
+      filePathTxt: data.filePathTxt || null,
     });
   }
 

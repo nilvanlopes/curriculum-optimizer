@@ -159,21 +159,29 @@ describe('CLI: generate', () => {
       expect(result.stderr).not.toContain('invalid');
     }, 120000);
 
-    it('deve aceitar --formats markdown', async () => {
+    it('deve rejeitar --formats markdown', async () => {
       const result = await runCLI([
         'generate',
         '--role', 'Developer',
         '--formats', 'markdown'
-      ], { timeout: 60000 });
+      ], {
+        timeout: 10000,
+        env: {
+          AI_PROVIDER: 'ollama',
+          OLLAMA_BASE_URL: 'http://localhost:11434/v1',
+          OLLAMA_MODEL: 'test-model',
+        },
+      });
       
-      expect(result.stderr).not.toContain('invalid');
-    }, 120000);
+      expect(result.code).not.toBe(0);
+      expect(result.output).toContain('Formatos inválidos');
+    }, 15000);
 
     it('deve aceitar múltiplos formatos separados por vírgula', async () => {
       const result = await runCLI([
         'generate',
         '--role', 'Developer',
-        '--formats', 'pdf,html,markdown'
+        '--formats', 'pdf,html,txt'
       ], { timeout: 60000 });
       
       expect(result.stderr).not.toContain('invalid');
@@ -192,6 +200,18 @@ describe('CLI: generate', () => {
     }, 120000);
   });
 
+  describe('Flags removidas', () => {
+    it('deve rejeitar --template', async () => {
+      const result = await runCLI([
+        'generate',
+        '--role', 'Developer',
+        '--template', 'base.html',
+      ], { timeout: 5000 });
+      expect(result.code).not.toBe(0);
+      expect(result.stderr).toMatch(/unknown option.*--template/i);
+    });
+  });
+
   describe('Combinações de argumentos', () => {
     it('deve executar com todos os argumentos opcionais', async () => {
       if (!fs.existsSync(testVagaPath)) {
@@ -203,7 +223,7 @@ describe('CLI: generate', () => {
         '--role', 'Tech Lead Frontend',
         '--job-file', testVagaPath,
         '--output-name', 'test-complete',
-        '--formats', 'pdf,html,markdown',
+        '--formats', 'pdf,html,txt',
         '--verbose'
       ], { timeout: 60000 });
       

@@ -46,7 +46,7 @@ describe('OpenRouterProvider', () => {
     });
 
     const provider = new OpenRouterProvider();
-    await expect(provider.call('prompt', { jsonResponse: true })).resolves.toBe('{"ok":true}');
+    await expect(provider.call('prompt', { mode: 'json' })).resolves.toBe('{"ok":true}');
 
     expect(createCompletion).toHaveBeenCalledWith(expect.objectContaining({
       response_format: { type: 'json_object' },
@@ -63,7 +63,7 @@ describe('OpenRouterProvider', () => {
     });
 
     const provider = new OpenRouterProvider();
-    await expect(provider.call('prompt', { jsonResponse: true }))
+    await expect(provider.call('prompt', { mode: 'json' }))
       .rejects.toThrow('interrompeu a resposta por limite de tokens');
   });
 });

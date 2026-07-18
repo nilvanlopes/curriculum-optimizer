@@ -68,8 +68,8 @@ Verifica se o PDF é compatível com sistemas de rastreamento de candidatos.
 
 Valida se o currículo está dentro do tamanho recomendado.
 
-- ✓ **Ideal**: 1-2 páginas
-- ⚠ **Atenção**: Mais de 2 páginas pode ser excessivo
+- ✓ **Ideal**: 2 páginas; durante a geração, a altura alvo é de 1,9 a 2,2 páginas
+- ⚠ **Atenção**: Mais de 2,2 páginas pode ser excessivo
 
 ### 4. Contagem de Palavras
 
@@ -124,7 +124,7 @@ Score ATS: 87/100
 
 ```
 ⚠ Avisos (2):
-  • PDF tem 3 páginas, considere reduzir para 1-2 páginas
+  • PDF tem 3 páginas, acima do alvo de 1,9-2,2 páginas
   • Densidade de keywords (3.2%) está abaixo do ideal (5-10%)
 ```
 
@@ -137,7 +137,7 @@ Score ATS: 87/100
 
 ## Quando Usar
 
-- **Após gerar um currículo** com `generate --format all` (validação automática)
+- **Após gerar um currículo** com `generate` (o PDF é validado automaticamente)
 - **Antes de enviar** para uma vaga importante
 - **Para comparar versões** diferentes do mesmo currículo
 - **Para diagnosticar problemas** quando não recebe retorno de recrutadores
@@ -146,7 +146,7 @@ Score ATS: 87/100
 
 - Use `--verbose` para ver detalhes técnicos da validação
 - PDFs gerados pelo comando `generate` são automaticamente compatíveis
-- Se o score estiver baixo, revise o template HTML antes de gerar o PDF
+- Se o score estiver baixo, revise a fonte original e o HTML final antes de gerar outro PDF
 - Evite usar PDFs escaneados ou convertidos de imagens
 
 ## Limitações

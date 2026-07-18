@@ -74,19 +74,19 @@ echo ""
 echo "=========================================="
 echo "TESTE 7: Gerar apenas HTML"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-html-only --format html
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-html-only --formats html
 
 echo ""
 echo "=========================================="
 echo "TESTE 8: Gerar apenas PDF"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-pdf-only --format pdf
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-pdf-only --formats pdf
 
 echo ""
 echo "=========================================="
-echo "TESTE 9: Gerar apenas Markdown"
+echo "TESTE 9: Gerar apenas texto"
 echo "=========================================="
-npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-markdown-only --format markdown
+npm run dev -- generate --job-file test-vaga.md --role "Tech Lead Frontend" --output-name test-text-only --formats txt
 
 echo ""
 echo "=========================================="

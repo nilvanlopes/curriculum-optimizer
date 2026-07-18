@@ -1,27 +1,38 @@
-TEMOS
-PLAYER
-CONTABILIDADE
-VAGAS
-VAGASDISPONIVEIS
-ProgramadorJunior
-ProgramadorPleno
-Administrativo
-Fiscal/Contabil
-DP
-Midia Social
-·Financeiro
-Beneficios:
-Day off
-Plano desaude
-Descontosno
-Premiacaopelas
-UniCatolica
-metasatingidas
-PL
-CONT
-Vale-transporte
-Oferecemosalmoco
-Cursosde capacitacao
-comcertificado
-rh@playercontabilidade.com
-Envieseucurriculo:
+Estamos Contratando!|Desenvolvedor(a) FullstackJunior
+AElevTecnologiaestaembuscadetalentoseminiciodecarreira
+quedesejamcresceremumambientecolaborativo,aprendendona
+praticaodesenvolvimentodeprodutosSaaSreais.
+Modelo:Hibrido
+Contratacao:CLT
+Nivel:Junior
+O que voce vaifazer?
+Desenvolvermelhoriasenovasfuncionalidadescom
+acompanhamento do time
+Aprendereatuarembackend,frontend,testesedocumentacao
+Participar de code reviews, dailies e pair programming
+Evoluirtecnicamentecommentoriadedesenvolvedoresmais
+experientes
+O que buscamos?
+Boa logica de programacao evontade de aprender
+ConhecimentobasicoemPHP/LaravelouNode.js,e/ouReact
+comJavaScript/TypeScript
+NocOesdeSQL,HTTP/RESTeGit
+Boacomunicacaoeproatividadeparabuscar apoioquando
+necessario
+Interesse emconstruiruma carreira solida em desenvolvimento
+de software
+Diferenciais
+Projetospessoais,open sourceoufreelas
+ConhecimentobasicoemDocker
+TypeScript
+Experiencia com frameworks modernos (Laravel, Nest, Next, etc.)
+Inglesparaleitura tecnica
+Perfil ideal
+Procuramos pessoas curiosas, comprometidas e com humildade
+para aprender. Valorizamos profissionais que cumprem o
+constantemente.
+Interessados(as),enviemseu curriculoparatalentos@elev.tec.br
+ou candidate-sepelo Linkedln.
+#Vagas#DesenvolvedorJunior#FullStack#ReactJS#NodeJS
+#Laravel#Tecnologia#PrimeiroEmprego#Programacao#Hiring
+#ElevTecnologia

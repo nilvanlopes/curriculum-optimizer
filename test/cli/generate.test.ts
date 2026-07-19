@@ -167,7 +167,7 @@ describe('CLI: generate', () => {
       ], {
         timeout: 10000,
         env: {
-          AI_PROVIDER: 'ollama',
+          PROVIDERS_ORDER: 'ollama',
           OLLAMA_BASE_URL: 'http://localhost:11434/v1',
           OLLAMA_MODEL: 'test-model',
         },

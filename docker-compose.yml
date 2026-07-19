@@ -22,7 +22,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      AI_PROVIDER: ${AI_PROVIDER:-}
+      PROVIDERS_ORDER: ${PROVIDERS_ORDER:-gemini,openrouter,ollama}
       CURRICULUM_FILE: ${CURRICULUM_FILE:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-nvidia/nemotron-3-super-120b-a12b:free}

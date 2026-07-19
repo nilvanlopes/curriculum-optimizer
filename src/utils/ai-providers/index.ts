@@ -1,5 +1,12 @@
 export { AnthropicProvider } from './anthropic-provider.js';
-export { createAIProvider, resolveAIProviderType, SUPPORTED_AI_PROVIDERS } from './factory.js';
+export {
+  createAIProvider,
+  createAIProviderByType,
+  resolveAIProviderCandidates,
+  resolveAIProvidersOrder,
+  resolveAIProviderType,
+  SUPPORTED_AI_PROVIDERS,
+} from './factory.js';
 export { GoogleProvider } from './google-provider.js';
 export { LMStudioProvider } from './lmstudio-provider.js';
 export { OllamaProvider } from './ollama-provider.js';

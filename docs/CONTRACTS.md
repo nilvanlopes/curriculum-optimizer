@@ -16,8 +16,9 @@ interface CLIGenerateOptions {
 }
 ```
 
-- `--provider` sobrescreve `AI_PROVIDER` somente naquela execução.
-- Sem provider configurado, o comando falha.
+- `--provider` usa somente o provider informado naquela execução e não faz fallback.
+- Sem `--provider`, o comando lê `PROVIDERS_ORDER` e tenta os providers em ordem.
+- Providers sem configuração obrigatória são pulados no modo `PROVIDERS_ORDER`; no modo `--provider`, configuração ausente é erro fatal.
 - `claude` normaliza para `anthropic`.
 - `--template` e o formato `markdown` são inválidos.
 - A ausência, ambiguidade, extensão inválida ou conteúdo vazio da fonte interrompem o fluxo antes da análise da vaga.
@@ -81,7 +82,9 @@ interface IAProvider {
 - Importação usa modo texto; não há instrução sistêmica para responder JSON.
 - Truncamento por limite de tokens é erro explícito.
 
-Cada chamada registra etapa, provider, modelo, endpoint seguro, modo, tentativa, duração e status. Prompt, resposta e credenciais não são registrados.
+Cada chamada registra etapa, provider, modelo, endpoint seguro, modo, tentativa, duração, status e erro redigido quando houver. Prompt, resposta e credenciais não são registrados. Erro de chamada, quota, rede, resposta vazia, truncamento ou JSON inválido torna o provider indisponível para as próximas etapas da mesma execução e aciona fallback no modo `PROVIDERS_ORDER`.
+
+O comando `analyze` não imprime a análise gerada no terminal. O resultado completo fica em `output/job-analysis-<timestamp>.json`, com provider e modelo usados.
 
 ## Análise e seleção
 

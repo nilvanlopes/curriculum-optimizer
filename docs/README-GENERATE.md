@@ -45,7 +45,7 @@ docker compose run --rm optimizer generate \
   --role "Tech Lead Frontend"
 ```
 
-Três saídas e override de provider:
+Três saídas e provider único nesta execução:
 
 ```bash
 docker compose run --rm optimizer generate \
@@ -57,7 +57,7 @@ docker compose run --rm optimizer generate \
 
 ## Ordem do fluxo
 
-1. resolve provider e configuração;
+1. resolve `--provider` ou a ordem `PROVIDERS_ORDER`;
 2. localiza, lê e sanitiza a fonte;
 3. reutiliza ou gera o base pelo prompt 06;
 4. analisa a vaga, se presente;

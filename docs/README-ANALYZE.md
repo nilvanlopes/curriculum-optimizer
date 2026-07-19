@@ -9,9 +9,9 @@ cv-optimizer analyze \
   [--verbose]
 ```
 
-`--job-file` tem prioridade quando as duas entradas são fornecidas. O override de provider vale somente para aquela execução; sem ele ou `AI_PROVIDER`, o comando falha.
+`--job-file` tem prioridade quando as duas entradas são fornecidas. Com `--provider`, a análise usa somente aquele provider e não faz fallback. Sem `--provider`, a análise percorre `PROVIDERS_ORDER`.
 
-A resposta estruturada contém keywords, requisitos obrigatórios/desejáveis, match score, gaps, destaques e sugestões. Gaps descrevem ausência em relação à fonte disponível; eles nunca autorizam adicionar experiência que o candidato não possui.
+A resposta estruturada é salva em `output/job-analysis-<timestamp>.json`, junto com provider, modelo e data de geração. O terminal mostra somente metadados e caminho do arquivo, sem imprimir keywords, requisitos, gaps, sugestões ou outros dados gerados. Gaps descrevem ausência em relação à fonte disponível; eles nunca autorizam adicionar experiência que o candidato não possui.
 
 Exemplo Docker:
 

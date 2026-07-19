@@ -54,7 +54,7 @@ Esses arquivos são cache intermediário ignorado pelo Git. O cache só é reuti
 
 ## Providers
 
-Defina `AI_PROVIDER` ou use `--provider` somente naquela execução. Sem ambos, o comando falha.
+Sem `--provider`, o CLI usa `PROVIDERS_ORDER` e tenta os providers em ordem. Providers sem configuração obrigatória são pulados; erro de chamada, quota, rede, resposta vazia, truncamento ou JSON inválido desativa aquele provider pelo restante da execução e tenta o próximo. Use `--provider` para uma execução com provider único, sem fallback.
 
 | Valor | Configuração obrigatória |
 |---|---|
@@ -68,12 +68,24 @@ Defina `AI_PROVIDER` ou use `--provider` somente naquela execução. Sem ambos, 
 Exemplo com Ollama no host:
 
 ```env
-AI_PROVIDER=ollama
+PROVIDERS_ORDER=ollama
 OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
 OLLAMA_MODEL=qwen2.5:7b
 ```
 
 O Compose resolve `host.docker.internal` pelo gateway do host. Para outra máquina, use o IP dela no URL completo.
+
+Exemplo com fallback remoto/local:
+
+```env
+PROVIDERS_ORDER=gemini,openrouter,ollama
+GOOGLE_API_KEY=sua-chave
+GOOGLE_MODEL=gemini-3.5-flash
+OPENROUTER_API_KEY=sk-or-v1-sua-chave
+OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
+OLLAMA_MODEL=qwen2.5:7b
+```
 
 ## CLI
 

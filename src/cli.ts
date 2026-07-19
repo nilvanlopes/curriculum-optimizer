@@ -44,6 +44,15 @@ function readJobDescription(input: string, requireFile = false): string {
   return input;
 }
 
+function writeJobAnalysisFile(analysis: unknown): string {
+  const outputDir = path.join(process.cwd(), 'output');
+  fs.mkdirSync(outputDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filePath = path.join(outputDir, `job-analysis-${timestamp}.json`);
+  fs.writeFileSync(filePath, `${JSON.stringify(analysis, null, 2)}\n`, 'utf-8');
+  return filePath;
+}
+
 let logger = new Logger();
 const program = new Command();
 
@@ -79,6 +88,7 @@ program
       }
       logger.section('Gerando Currículo Otimizado');
       const aiClient = new AIClient({ providerOverride: options.provider, logger });
+      logger.info(`Gerando com IA: ${aiClient.provider.provider} / ${aiClient.provider.model}`);
       const formats = parseOutputFormats(options.formats);
       const jobInput = options.jobFile || options.jobDescription;
       const jobDescription = jobInput
@@ -235,61 +245,27 @@ program
       if (options.jobFile) {
         logger.info(`Arquivo: ${path.resolve(options.jobFile)}`);
       }
-      
-      logger.startSpinner('Analisando descrição com IA...');
-      
+
       const aiClient = new AIClient({ providerOverride: options.provider, logger });
+      logger.info(`Gerando com IA: ${aiClient.provider.provider} / ${aiClient.provider.model}`);
+      logger.startSpinner('Analisando descrição com IA...');
+
       const analyzer = new JobAnalyzer(undefined, aiClient);
       const analysis = await analyzer.analyzeJob(jobDescription);
-      
+      const analysisPath = writeJobAnalysisFile({
+        provider: aiClient.provider.provider,
+        model: aiClient.provider.model,
+        generatedAt: new Date().toISOString(),
+        analysis,
+      });
+
       logger.stopSpinner(true, 'Análise concluída');
       logger.break();
-      
-      logger.info(`Keywords Críticas Identificadas (${analysis.keywords.length}):`);
-      analysis.keywords.forEach((kw, i) => {
-        console.log(chalk.gray(`  ${i + 1}.`) + chalk.white(` ${kw}`));
+      logger.table({
+        'Provider': `${aiClient.provider.provider} / ${aiClient.provider.model}`,
+        'Arquivo': analysisPath,
       });
-      
-      logger.break();
-      logger.success(`Match Score: ${analysis.matchScore}%`);
-      logger.info(chalk.gray(analysis.matchScoreJustification));
-      logger.break();
-      
-      logger.info('Requisitos Obrigatórios:');
-      analysis.requirements.mandatory.forEach((req, i) => {
-        console.log(chalk.yellow(`  ${i + 1}. ${req}`));
-      });
-      
-      if (analysis.requirements.desirable.length > 0) {
-        logger.break();
-        logger.info('Requisitos Desejáveis:');
-        analysis.requirements.desirable.forEach((req, i) => {
-          console.log(chalk.gray(`  ${i + 1}. ${req}`));
-        });
-      }
-      
-      if (analysis.gaps.length > 0) {
-        logger.break();
-        logger.warning(`Gaps identificados (${analysis.gaps.length}):`);
-        analysis.gaps.forEach((gap) => {
-          const importanceColor = gap.importance === 'high' ? chalk.red : gap.importance === 'medium' ? chalk.yellow : chalk.gray;
-          console.log(importanceColor(`  • ${gap.keyword} (${gap.importance}): ${gap.suggestion}`));
-        });
-      }
-      
-      if (analysis.suggestions.length > 0) {
-        logger.break();
-        logger.info('Sugestões de Melhoria:');
-        analysis.suggestions.forEach((suggestion, i) => {
-          console.log(chalk.blue(`  ${i + 1}. ${suggestion}`));
-        });
-      }
-      
-      if (options.verbose) {
-        logger.break();
-        logger.debug('Detalhes completos da análise salvos no histórico');
-      }
-      
+
     } catch (error) {
       logger.error(`Erro ao analisar vaga: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       if (options.verbose && error instanceof Error) {

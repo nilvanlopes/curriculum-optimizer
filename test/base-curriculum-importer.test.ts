@@ -103,6 +103,50 @@ describe('BaseCurriculumImporter', () => {
     expect(setup.provider.calls[1].options?.mode).toBe('text');
   });
 
+  it('normaliza data-metrics estrutural antes de validar a importação', async () => {
+    const withoutMetrics = validBase()
+      .replace(' data-metrics="false">Desenvolvimento de aplicações responsivas', '>Desenvolvimento de aplicações responsivas')
+      .replace('data-metrics="false">Integração de interfaces', 'data-metrics="talvez">Integração de interfaces');
+    const setup = importerSetup([withoutMetrics]);
+
+    await expect(setup.importer.ensureBase(source())).resolves.toMatchObject({ cache: 'generated' });
+    const html = fs.readFileSync(setup.basePath, 'utf8');
+    expect(html).toContain('data-metrics="false">Desenvolvimento de aplicações responsivas');
+    expect(html).toContain('data-metrics="false">Integração de interfaces');
+  });
+
+  it('normaliza placeholders de metadados sem alterar fatos visíveis', async () => {
+    const withAttributePlaceholders = validBase()
+      .replace('data-company="empresa-exemplo"', 'data-company="[slug-unico]"')
+      .replace('data-keywords="react,typescript,apis"', 'data-keywords="[keywords-da-fonte]"')
+      .replace('data-category="frontend"', 'data-category="[categoria]"')
+      .replace('data-keywords="react,typescript"', 'data-keywords="[keywords-da-fonte]"');
+    const setup = importerSetup([withAttributePlaceholders]);
+
+    await expect(setup.importer.ensureBase(source())).resolves.toMatchObject({ cache: 'generated' });
+    const html = fs.readFileSync(setup.basePath, 'utf8');
+    expect(html).toContain('data-company="empresa-exemplo"');
+    expect(html).not.toContain('[slug-unico]');
+    expect(html).not.toContain('[keywords-da-fonte]');
+    expect(html).not.toContain('[categoria]');
+  });
+
+  it('bloqueia contatos inventados e currículo base com seções descartadas', async () => {
+    const badImport = validBase()
+      .replaceAll('Ana Silva', 'Nilvan Lopes')
+      .replaceAll('Desenvolvedora Web', 'Desenvolvedor Fullstack')
+      .replaceAll('ana@example.com', 'nilvanlopes@example.com')
+      .replace('Desenvolvedora Frontend', 'Desenvolvedor Fullstack')
+      .replace('2022 - Presente', '2026 - Presente')
+      .replace('Empresa Exemplo', 'Fity Ai')
+      .replace('Desenvolvimento de aplicações responsivas com React e TypeScript.', 'Desenvolvimento de aplicativo mobile utilizando React Native e NestJS.')
+      .replace('Integração de interfaces com APIs.', '')
+      .replace('HTML, CSS, React, TypeScript', 'React, Angular, HTML, CSS, JavaScript');
+    const setup = importerSetup([badImport, badImport]);
+
+    await expect(setup.importer.ensureBase(markdownSource())).rejects.toThrow(/Contato ausente|2 experiência|formação|idiomas/);
+  });
+
   it('não sobrescreve cache anterior quando as duas tentativas falham', async () => {
     const setup = importerSetup([validBase()]);
     await setup.importer.ensureBase(source());
@@ -218,6 +262,43 @@ function source(): CurriculumSource {
   return {
     path: '/tmp/original-curriculum.txt',
     format: 'txt',
+    content,
+    sha256: sha256(content),
+    size: Buffer.byteLength(content),
+  };
+}
+
+function markdownSource(): CurriculumSource {
+  const content = [
+    '# Nilvan Lopes Cruz',
+    '',
+    '- **E-mail:** nilvanlopes@outlook.com',
+    '- **LinkedIn:** https://www.linkedin.com/in/nilvanlopes/',
+    '- **GitHub:** https://github.com/nilvanlopes',
+    '',
+    '## Formação',
+    '',
+    '- 2024 - Análise e Desenvolvimento de Sistemas, Universidade Estadual do Tocantins (UNITINS) - Cursando',
+    '',
+    '## Experiência profissional',
+    '',
+    '### 2026 - Fity Ai',
+    '',
+    '- **Cargo:** Desenvolvedor Fullstack',
+    '- Desenvolvimento de aplicativo mobile, utilizando React Native e NestJS.',
+    '',
+    '### 2025 - Niceplanet',
+    '',
+    '- **Cargo:** Desenvolvedor Fullstack Junior',
+    '- Manutenção e evolução do sistema central da empresa utilizando React, PHP e Node.js.',
+    '',
+    '## Idiomas',
+    '',
+    '- Inglês: Intermediário',
+  ].join('\n');
+  return {
+    path: '/tmp/original-curriculum.md',
+    format: 'md',
     content,
     sha256: sha256(content),
     size: Buffer.byteLength(content),

@@ -311,9 +311,7 @@ export class HTMLComposer {
     this.applySelectedSkills($, normalized);
     this.applySelectedCertifications($, normalized);
 
-    const serializedHtml = $.html();
-    const hasDoctype = /^<!DOCTYPE html>/i.test(templateHtml.trimStart());
-    return hasDoctype ? `<!DOCTYPE html>\n${serializedHtml}` : serializedHtml;
+    return $.html();
   }
 
   /**

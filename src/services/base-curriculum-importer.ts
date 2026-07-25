@@ -5,7 +5,11 @@ import { AIClient } from '../utils/ai-client.js';
 import { sha256 } from '../utils/hash.js';
 import { Logger } from '../utils/logger.js';
 import type { CurriculumSource } from './curriculum-source.js';
-import { extractHTMLDocument, validateBaseCurriculumHTML } from './base-curriculum-validator.js';
+import {
+  extractHTMLDocument,
+  normalizeBaseCurriculumHTML,
+  validateBaseCurriculumHTML,
+} from './base-curriculum-validator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,7 +102,8 @@ export class BaseCurriculumImporter {
           attempt,
         }
       );
-      const html = extractHTMLDocument(response);
+      const rawHtml = extractHTMLDocument(response);
+      const html = normalizeBaseCurriculumHTML(rawHtml);
       const validation = validateBaseCurriculumHTML(html, source);
       if (validation.valid) {
         const metadata: BaseCurriculumMetadata = {
@@ -125,7 +130,7 @@ export class BaseCurriculumImporter {
         };
       }
       validationErrors = validation.errors;
-      previousHtml = html;
+      previousHtml = rawHtml;
     }
 
     throw new Error(

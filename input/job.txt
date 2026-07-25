@@ -1,38 +1,34 @@
-Estamos Contratando!|Desenvolvedor(a) FullstackJunior
-AElevTecnologiaestaembuscadetalentoseminiciodecarreira
-quedesejamcresceremumambientecolaborativo,aprendendona
-praticaodesenvolvimentodeprodutosSaaSreais.
-Modelo:Hibrido
-Contratacao:CLT
-Nivel:Junior
-O que voce vaifazer?
-Desenvolvermelhoriasenovasfuncionalidadescom
-acompanhamento do time
-Aprendereatuarembackend,frontend,testesedocumentacao
-Participar de code reviews, dailies e pair programming
-Evoluirtecnicamentecommentoriadedesenvolvedoresmais
-experientes
-O que buscamos?
-Boa logica de programacao evontade de aprender
-ConhecimentobasicoemPHP/LaravelouNode.js,e/ouReact
-comJavaScript/TypeScript
-NocOesdeSQL,HTTP/RESTeGit
-Boacomunicacaoeproatividadeparabuscar apoioquando
-necessario
-Interesse emconstruiruma carreira solida em desenvolvimento
-de software
-Diferenciais
-Projetospessoais,open sourceoufreelas
-ConhecimentobasicoemDocker
-TypeScript
-Experiencia com frameworks modernos (Laravel, Nest, Next, etc.)
-Inglesparaleitura tecnica
-Perfil ideal
-Procuramos pessoas curiosas, comprometidas e com humildade
-para aprender. Valorizamos profissionais que cumprem o
-constantemente.
-Interessados(as),enviemseu curriculoparatalentos@elev.tec.br
-ou candidate-sepelo Linkedln.
-#Vagas#DesenvolvedorJunior#FullStack#ReactJS#NodeJS
-#Laravel#Tecnologia#PrimeiroEmprego#Programacao#Hiring
-#ElevTecnologia
+Dev Full Stack - PJ remoto, longo prazo (pagamento semanal)
+
+Estamos contratando um(a) desenvolvedor(a) full stack para integrar a equipe de forma continua. Nao e projeto pontual: a vaga e pensada para uma relacao longa, com evolucao junto ao time e ao produto.
+
+Stack necessaria:
+- PHP (manutencao e evolucao de sistemas legados)
+- JavaScript e TypeScript
+- SQL (modelagem e consultas)
+- Tailwind CSS
+- Docker
+- Git (fluxo com branches e pull requests)
+- SSH / linha de comando Linux
+
+O que voce vai fazer:
+- Dar manutencao e evoluir sistemas ja existentes
+- Subir e configurar ambientes com Docker
+- Fazer deploys via SSH
+- Trabalhar com versionamento organizado no Git, revisando e recebendo review do time
+
+O que oferecemos:
+- Pagamento semanal - sem esperar 30 dias para receber
+- 100% remoto
+- Contrato PJ continuo, com previsibilidade de trabalho
+- Time pequeno, decisao rapida, pouco processo
+
+Como se candidatar:
+Envie para leoxcontato@gmail.com com o assunto "Dev Full Stack":
+1. Curriculo ou LinkedIn
+2. Link do GitHub (ou portfolio de projetos)
+3. Um paragrafo curto sobre um sistema legado em PHP que voce ja manteve
+4. Sua disponibilidade semanal (horas) e o valor semanal ou por hora que busca
+5. Se tem outros contratos ativos hoje e quanto do seu tempo eles ocupam
+
+Candidaturas sem GitHub ou sem o valor informado nao serao consideradas.

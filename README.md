@@ -70,7 +70,7 @@ Exemplo com Ollama no host:
 ```env
 PROVIDERS_ORDER=ollama
 OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
-OLLAMA_MODEL=qwen2.5:7b
+OLLAMA_MODEL=qwen2.5:14b-instruct-q3_K_M
 ```
 
 O Compose resolve `host.docker.internal` pelo gateway do host. Para outra máquina, use o IP dela no URL completo.
@@ -84,7 +84,7 @@ GOOGLE_MODEL=gemini-3.5-flash
 OPENROUTER_API_KEY=sk-or-v1-sua-chave
 OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
-OLLAMA_MODEL=qwen2.5:7b
+OLLAMA_MODEL=qwen2.5:14b-instruct-q3_K_M
 ```
 
 ## CLI

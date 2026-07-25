@@ -36,6 +36,7 @@ describe('HTMLComposer', () => {
 
     const $ = cheerio.load(html);
 
+    expect(html.match(/<!DOCTYPE html>/gi)).toHaveLength(1);
     expect($('html').length).toBe(1);
     expect($('head title').text()).toContain('Desenvolvedor Frontend');
     expect($('.header .title').text()).toBe('Desenvolvedor Frontend');

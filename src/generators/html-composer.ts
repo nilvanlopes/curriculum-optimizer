@@ -264,13 +264,41 @@ export class HTMLComposer {
     }
   }
 
+  private removeIrrelevantPhpProjectContent(
+    $: cheerio.CheerioAPI,
+    role: string,
+    jobAnalysis?: JobAnalysisResult,
+  ): void {
+    const roleText = role.toLowerCase();
+    const vacancyText = [
+      ...(jobAnalysis?.keywords || []),
+      ...(jobAnalysis?.requirements?.mandatory || []),
+      ...(jobAnalysis?.requirements?.desirable || []),
+    ].join(' ').toLowerCase();
+    const isPhpRole = roleText.includes('php') || vacancyText.includes('php');
+    const mentionsQuarkus = /quarkus|jpa/.test(vacancyText);
+    if (!isPhpRole || mentionsQuarkus) return;
+
+    $('.contact-info span').each((_, element) => {
+      if (/quarkus|jpa/i.test($(element).text())) $(element).remove();
+    });
+    $('.projects li, .personal-projects li, .projects .achievement, .projects p').each((_, element) => {
+      if (/quarkus|jpa/i.test($(element).text())) $(element).remove();
+    });
+    $('.skill-list').each((_, element) => {
+      const filtered = $(element).text().replace(/\b(?:Quarkus|JPA)\b\s*,?\s*/gi, '').replace(/,\s*,/g, ',').trim();
+      $(element).text(filtered.replace(/,\s*$/g, ''));
+    });
+  }
+
   /**
    * Renderiza o template HTML com o conteúdo selecionado
    */
   private renderTemplateHtml(
     templateHtml: string,
     role: string,
-    contentSelection: ContentSelectionResult
+    contentSelection: ContentSelectionResult,
+    jobAnalysis?: JobAnalysisResult,
   ): string {
     const normalized = this.normalizeContentSelection(contentSelection);
     const $ = cheerio.load(templateHtml);
@@ -310,6 +338,7 @@ export class HTMLComposer {
 
     this.applySelectedSkills($, normalized);
     this.applySelectedCertifications($, normalized);
+    this.removeIrrelevantPhpProjectContent($, role, jobAnalysis);
 
     return $.html();
   }
@@ -325,7 +354,12 @@ export class HTMLComposer {
     try {
       void _jobAnalysis;
       const templateHtml = this.loadTemplate();
-      const html = this.renderTemplateHtml(templateHtml, role, this.normalizeContentSelection(contentSelection));
+      const html = this.renderTemplateHtml(
+        templateHtml,
+        role,
+        this.normalizeContentSelection(contentSelection),
+        _jobAnalysis,
+      );
 
       // Valida estrutura básica
       const validation = this.validateHTML(html);

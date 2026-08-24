@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import * as cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 import { AIClient } from '../utils/ai-client.js';
 import { sha256 } from '../utils/hash.js';
@@ -103,7 +104,10 @@ export class BaseCurriculumImporter {
         }
       );
       const rawHtml = extractHTMLDocument(response);
-      const html = normalizeBaseCurriculumHTML(rawHtml);
+      const html = preserveSourceContacts(
+        normalizeBaseCurriculumHTML(rawHtml),
+        source.content,
+      );
       const validation = validateBaseCurriculumHTML(html, source);
       if (validation.valid) {
         const metadata: BaseCurriculumMetadata = {
@@ -146,6 +150,9 @@ export class BaseCurriculumImporter {
     try {
       const metadata = JSON.parse(fs.readFileSync(this.metadataPath, 'utf8')) as BaseCurriculumMetadata;
       const html = fs.readFileSync(this.basePath, 'utf8');
+      // Cache antigo pode conter links soltos duplicados no cabeçalho.
+      // Force uma nova importação para aplicar a normalização de contatos.
+      if (cheerio.load(html)('.contact-info').first().children('a').length > 0) return null;
       const hashesMatch = metadata.version === 1
         && metadata.source?.sha256 === source.sha256
         && metadata.promptSha256 === expected.promptSha256
@@ -185,6 +192,48 @@ export class BaseCurriculumImporter {
       if (fs.existsSync(metadataTemp)) fs.unlinkSync(metadataTemp);
     }
   }
+}
+
+function preserveSourceContacts(html: string, sourceContent: string): string {
+  const $ = cheerio.load(html);
+  const contactInfo = $('.contact-info').first();
+  if (!contactInfo.length) return html;
+
+  // O modelo às vezes repete os links como filhos diretos depois dos contatos
+  // estruturados. Os links estruturados dentro de spans permanecem intactos.
+  contactInfo.children('a').remove();
+  contactInfo.children('span').each((_, element) => {
+    const label = $(element).find('strong').first().text().toLowerCase();
+    if (!/(nascimento|endere[cç]o|telefone|e-?mail|linkedin|github|portf[oó]lio|website|site|whatsapp)/i.test(label)) {
+      $(element).remove();
+    }
+  });
+  const existing = normalizeContactText(contactInfo.text());
+  const sourceContacts = new Set<string>();
+  for (const email of sourceContent.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi) || []) {
+    sourceContacts.add(email);
+  }
+  for (const match of sourceContent.matchAll(/\*\*[^*]*(?:linkedin|github|portf[oó]lio|website)[^*]*\*\*\s*:\s*(https?:\/\/[^\s)]+)/gi)) {
+    sourceContacts.add(match[1].replace(/[.,;]+$/, ''));
+  }
+
+  for (const contact of sourceContacts) {
+    if (existing.includes(normalizeContactText(contact))) continue;
+    const isEmail = contact.includes('@') && !contact.startsWith('http');
+    contactInfo.append(
+      $('<a>').attr('href', isEmail ? `mailto:${contact}` : contact).text(contact),
+    );
+    existing.concat(` ${normalizeContactText(contact)}`);
+  }
+  return $.html();
+}
+
+function normalizeContactText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/^https?:\/\//g, '')
+    .replace(/^www\./g, '')
+    .replace(/[^a-z0-9@._/-]/g, '');
 }
 
 function restoreFile(target: string, previous: Buffer | null): void {

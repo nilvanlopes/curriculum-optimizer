@@ -1,34 +1,22 @@
-Dev Full Stack - PJ remoto, longo prazo (pagamento semanal)
+VAGA: DESENVOLVEDOR(A) JAVA JÚNIOR
+Canix Soluções em TI | 100% remoto | CLT ou PJ
 
-Estamos contratando um(a) desenvolvedor(a) full stack para integrar a equipe de forma continua. Nao e projeto pontual: a vaga e pensada para uma relacao longa, com evolucao junto ao time e ao produto.
+Você vai apoiar a reescrita de sistemas legados para tecnologias modernas, ao lado de desenvolvedores experientes, com contato direto com IA aplicada ao produto.
 
-Stack necessaria:
-- PHP (manutencao e evolucao de sistemas legados)
-- JavaScript e TypeScript
-- SQL (modelagem e consultas)
-- Tailwind CSS
-- Docker
-- Git (fluxo com branches e pull requests)
-- SSH / linha de comando Linux
-
-O que voce vai fazer:
-- Dar manutencao e evoluir sistemas ja existentes
-- Subir e configurar ambientes com Docker
-- Fazer deploys via SSH
-- Trabalhar com versionamento organizado no Git, revisando e recebendo review do time
-
-O que oferecemos:
-- Pagamento semanal - sem esperar 30 dias para receber
-- 100% remoto
-- Contrato PJ continuo, com previsibilidade de trabalho
-- Time pequeno, decisao rapida, pouco processo
-
-Como se candidatar:
-Envie para leoxcontato@gmail.com com o assunto "Dev Full Stack":
-1. Curriculo ou LinkedIn
-2. Link do GitHub (ou portfolio de projetos)
-3. Um paragrafo curto sobre um sistema legado em PHP que voce ja manteve
-4. Sua disponibilidade semanal (horas) e o valor semanal ou por hora que busca
-5. Se tem outros contratos ativos hoje e quanto do seu tempo eles ocupam
-
-Candidaturas sem GitHub ou sem o valor informado nao serao consideradas.
+Stack: Java, Spring Boot, ReactJS e PostgreSQL.
+Requisitos:
+- Graduação em andamento (a partir do 5º semestre) ou concluída
+- Fundamentos sólidos de Java e orientação a objetos
+- Noções de Spring Boot e ReactJS
+- SQL e modelagem básica de dados
+- Git e versionamento de código
+- Experiência prévia não obrigatória
+Diferenciais:
+- Projetos pessoais publicados no GitHub
+- Estágio anterior com desenvolvimento web
+- Noções de JavaEE ou JSF
+- PostgreSQL e SQL além do básico
+- Interesse por IA, LLMs e RAG
+- Noções de cloud: AWS, GCP ou Azure
+Enviar currículo para rh@canix.com.br
+Assunto exato do e-mail: DESENVOLVEDOR JAVA JÚNIOR

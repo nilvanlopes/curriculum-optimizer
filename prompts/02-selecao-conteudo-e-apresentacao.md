@@ -7,9 +7,11 @@ Você é um especialista em otimização de currículos e escrita profissional. 
 Com base na análise da vaga fornecida (ou role se não houver vaga), analise o currículo HTML e realize as seguintes tarefas:
 
 ### 1. Seleção de Experiências Prioritárias
-- **Selecione todas as experiencias
-- **CRÍTICO: NÃO descarte experiências por serem de stack diferente. Se uma experiência fullstack tem habilidades relevantes para a vaga frontend, ela DEVE ser selecionada e priorizada.**
-- Priorize quantidade suficiente para preencher ~2 páginas sem deixar espaço vazio
+- Selecione somente experiências, projetos e competências com relação concreta à vaga ou ao role. Conteúdo sem aderência pode ser omitido, mesmo que exista no currículo base.
+- **CRÍTICO: NÃO descarte experiências por serem de stack diferente quando houver habilidades relevantes. Se uma experiência fullstack tem habilidades relevantes para a vaga frontend, ela DEVE ser selecionada e priorizada.**
+- Não inclua projetos que só compartilhem a palavra “API” ou “GitHub” com a vaga; a tecnologia, atividade ou contexto precisa ser relevante ao trabalho anunciado.
+- Para uma vaga de PHP/Laravel, não inclua o projeto Quarkus/JPA nem as competências Java, Spring ou Quarkus, salvo se a descrição da vaga mencionar explicitamente essas tecnologias. O link desse projeto também não é contato do candidato.
+- Priorize quantidade suficiente para preencher ~2 páginas sem deixar espaço vazio, sem usar conteúdo irrelevante apenas para ocupar espaço.
 - Ordem de prioridade (1 = mais relevante, números crescentes conforme relevância)
 - Quais conquistas (achievements) destacar de cada experiência (quantidade variável por experiência conforme relevância e espaço disponível)
 
@@ -158,9 +160,9 @@ Antes de retornar JSON, verifique:
 ## Critérios de Seleção Detalhados
 
 ### Para Experiências
-- **CRÍTICO: NÃO descarte experiências por terem stack diferente da vaga**
+- **CRÍTICO: NÃO descarte experiências por terem stack diferente da vaga quando existir aderência concreta**
 - **Exemplo**: Se vaga é "Frontend" mas candidato tem exp "Fullstack" com React/TypeScript, essa experiência DEVE ser selecionada se o React/TypeScript for relevante
-- **Priorização** (selecione sempre todas as experiências. Selecione sempre as 5 MELHORES atividades relativas a vaga para completar a experiência):
+- **Priorização** (selecione as experiências com aderência concreta. Para cada uma, selecione as melhores atividades relativas à vaga):
   1. **Relevância para vaga/role** (peso: 50%)
      - Keywords da vaga presentes na experiência
      - Tecnologias mencionadas
@@ -406,13 +408,14 @@ Se NÃO houver análise de vaga (`matchScore: 0`):
 ### Prioridades Absolutas:
 1. **NUNCA invente dados** - todas as tecnologias, certificações e achievements devem existir no HTML
 2. **Quantidade variável conforme conteúdo disponível e espaço em ~2 páginas**:
-   - Experiências: selecione todas
+   - Experiências: selecione as relevantes; omita experiências e projetos sem aderência concreta à vaga
    - Categorias de skills: inclua todas relevantes até 6 no maximo
    - Achievements: selecione todos relevantes por experiência no maximo 5
    - Certificações: inclua todas relevantes
    - Presentation text: 200-400 caracteres (OBRIGATÓRIO)
 3. **Presentation text é OBRIGATÓRIO** - sempre inclua com factualidade; métricas só quando existirem na fonte
-4. **Não descarte experiências por stack diferente** - avalie relevância de habilidades individuais
+4. **Não descarte experiências relevantes por stack diferente** - avalie relevância de habilidades individuais
+5. **Exclusão explícita:** remova projetos e tecnologias sem relação com os requisitos da vaga; para PHP/Laravel, Quarkus/JPA é conteúdo não relacionado.
 5. **Sempre inclua campo `metadata`** com estatísticas de seleção
 6. **Ajuste quantidade total de conteúdo para preencher adequadamente ~2 páginas** - priorize qualidade sobre quantidade fixa
 

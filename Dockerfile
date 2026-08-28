@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM node:22-bookworm-slim AS build
+FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS build
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PUPPETEER_SKIP_DOWNLOAD=true \
@@ -31,7 +31,7 @@ FROM build AS production-deps
 
 RUN npm prune --omit=dev
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive \
     NODE_ENV=production \

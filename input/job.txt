@@ -1,22 +1,28 @@
-VAGA: DESENVOLVEDOR(A) JAVA JÚNIOR
-Canix Soluções em TI | 100% remoto | CLT ou PJ
+Vaga para Desenvolvedor(a) Front-end Júnior
+Empresa: Eight Vision
+Localização: Brasil
+Modalidade: 100% Remota
+Tipo: Tempo Inteiro
+Data publicada na página: 20-09-2026
 
-Você vai apoiar a reescrita de sistemas legados para tecnologias modernas, ao lado de desenvolvedores experientes, com contato direto com IA aplicada ao produto.
+Descrição:
+A Eight Vision está crescendo e formando o seu time. Buscamos um(a) Desenvolvedor(a) Front-end que já tenha uma boa base, goste de tecnologia e, principalmente, tenha vontade de aprender e evoluir.
+A vaga também é para quem está começando a carreira e procura uma oportunidade para colocar os conhecimentos em prática, participar de projetos reais e crescer profissionalmente.
 
-Stack: Java, Spring Boot, ReactJS e PostgreSQL.
-Requisitos:
-- Graduação em andamento (a partir do 5º semestre) ou concluída
-- Fundamentos sólidos de Java e orientação a objetos
-- Noções de Spring Boot e ReactJS
-- SQL e modelagem básica de dados
-- Git e versionamento de código
-- Experiência prévia não obrigatória
+O que esperamos:
+- Boa base em HTML, CSS e JavaScript;
+- Noções de TypeScript;
+- Conhecimento em pelo menos um framework ou biblioteca front-end (React, Next.js, Vue.js, Angular ou similar);
+- Conhecimento de Git e GitHub;
+- Noções de integração e consumo de APIs;
+- Conhecimento de responsividade;
+- Noções de componentização e organização de código;
+- Capacidade de transformar layouts em interfaces funcionais;
+- Raciocínio lógico e disposição para pesquisar, aprender e resolver problemas.
 Diferenciais:
-- Projetos pessoais publicados no GitHub
-- Estágio anterior com desenvolvimento web
-- Noções de JavaEE ou JSF
-- PostgreSQL e SQL além do básico
-- Interesse por IA, LLMs e RAG
-- Noções de cloud: AWS, GCP ou Azure
-Enviar currículo para rh@canix.com.br
-Assunto exato do e-mail: DESENVOLVEDOR JAVA JÚNIOR
+- Conhecimentos em Figma, UI/UX, testes;
+- Projetos pessoais, acadêmicos ou trabalhos freelance.
+
+Também são valorizados responsabilidade, curiosidade, comunicação, comprometimento e vontade de evoluir.
+
+Candidatura: enviar currículo e, se tiver, GitHub ou portfólio para contato@eightvision.com.br.
